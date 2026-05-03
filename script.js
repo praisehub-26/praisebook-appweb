@@ -9478,13 +9478,18 @@ function anunciarVozGuia(texto, esRepeticion = false, esUltimaRepeticion = false
 async function reproducirVocesEnSecuencia(audios) {
     if (!audios || audios.length === 0) return;
 
+    // Tu misma lógica exacta para obtener los blobs
     const blobs = await Promise.all(audios.map(url =>
         fetch(url).then(res => res.blob()).catch(() => null)
     ));
 
+    // 🔥 EL TRUCO: Usamos el motor de audio que el celular NO bloquea
+    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    if (audioCtx.state === 'suspended') await audioCtx.resume();
+
     let idx = 0;
 
-    function playNext() {
+    async function playNext() {
         if (idx >= blobs.length) return;
 
         const blob = blobs[idx];
@@ -9494,26 +9499,30 @@ async function reproducirVocesEnSecuencia(audios) {
             return;
         }
 
-        const urlSegura = URL.createObjectURL(blob);
-        const voz = new Audio(urlSegura);
+        // Convertimos el blob al formato que lee el motor móvil
+        const arrayBuffer = await blob.arrayBuffer();
+        const audioBuffer = await audioCtx.decodeAudioData(arrayBuffer);
+
+        // Reemplazamos "new Audio()" por el reproductor nativo del sistema
+        const voz = audioCtx.createBufferSource();
+        voz.buffer = audioBuffer;
+        voz.connect(audioCtx.destination);
 
         let siguienteDisparado = false;
 
-        voz.onloadedmetadata = () => {
-            // Le restamos 0.2 segundos al total para que la siguiente palabra arranque justo antes
-            const tiempoDeEspera = (voz.duration - 0.7) * 1000;
-            
-            setTimeout(() => {
-                if (!siguienteDisparado) {
-                    siguienteDisparado = true;
-                    idx++;
-                    playNext();
-                }
-            }, Math.max(0, tiempoDeEspera)); // El Math.max evita errores si el audio es ultra corto
-        };
+        // Tu misma matemática de tiempos
+        const tiempoDeEspera = (audioBuffer.duration - 0.7) * 1000;
+        
+        setTimeout(() => {
+            if (!siguienteDisparado) {
+                siguienteDisparado = true;
+                idx++;
+                playNext();
+            }
+        }, Math.max(0, tiempoDeEspera));
 
         voz.onended = () => {
-            URL.revokeObjectURL(urlSegura); // Borramos rastro para no saturar memoria
+            // Ya no necesitas URL.revokeObjectURL aquí
             if (!siguienteDisparado) {
                 siguienteDisparado = true;
                 idx++;
@@ -9521,7 +9530,8 @@ async function reproducirVocesEnSecuencia(audios) {
             }
         };
 
-        voz.play().catch(e => console.warn("Audio de voz no disponible:", e));
+        // Le damos play (esto burla la restricción del celular)
+        voz.start();
     }
 
     playNext();
