@@ -9478,18 +9478,13 @@ function anunciarVozGuia(texto, esRepeticion = false, esUltimaRepeticion = false
 async function reproducirVocesEnSecuencia(audios) {
     if (!audios || audios.length === 0) return;
 
-    // Tu misma lógica exacta para obtener los blobs
     const blobs = await Promise.all(audios.map(url =>
         fetch(url).then(res => res.blob()).catch(() => null)
     ));
 
-    // 🔥 EL TRUCO: Usamos el motor de audio que el celular NO bloquea
-    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-    if (audioCtx.state === 'suspended') await audioCtx.resume();
-
     let idx = 0;
 
-    async function playNext() {
+    function playNext() {
         if (idx >= blobs.length) return;
 
         const blob = blobs[idx];
@@ -9499,30 +9494,30 @@ async function reproducirVocesEnSecuencia(audios) {
             return;
         }
 
-        // Convertimos el blob al formato que lee el motor móvil
-        const arrayBuffer = await blob.arrayBuffer();
-        const audioBuffer = await audioCtx.decodeAudioData(arrayBuffer);
-
-        // Reemplazamos "new Audio()" por el reproductor nativo del sistema
-        const voz = audioCtx.createBufferSource();
-        voz.buffer = audioBuffer;
-        voz.connect(audioCtx.destination);
+        const urlSegura = URL.createObjectURL(blob);
+        
+        // 🔥 EL CAMBIO MAESTRO: En vez de "const voz = new Audio()", 
+        // usamos el reproductor global que el celular YA autorizó en el conteo.
+        reproductorVozGuia.src = urlSegura;
+        reproductorVozGuia.load(); // Obliga al celular a registrar el cambio de pista
 
         let siguienteDisparado = false;
 
-        // Tu misma matemática de tiempos
-        const tiempoDeEspera = (audioBuffer.duration - 0.7) * 1000;
-        
-        setTimeout(() => {
-            if (!siguienteDisparado) {
-                siguienteDisparado = true;
-                idx++;
-                playNext();
-            }
-        }, Math.max(0, tiempoDeEspera));
+        reproductorVozGuia.onloadedmetadata = () => {
+            // Tu misma matemática perfecta
+            const tiempoDeEspera = (reproductorVozGuia.duration - 0.7) * 1000;
+            
+            setTimeout(() => {
+                if (!siguienteDisparado) {
+                    siguienteDisparado = true;
+                    idx++;
+                    playNext();
+                }
+            }, Math.max(0, tiempoDeEspera)); 
+        };
 
-        voz.onended = () => {
-            // Ya no necesitas URL.revokeObjectURL aquí
+        reproductorVozGuia.onended = () => {
+            URL.revokeObjectURL(urlSegura); 
             if (!siguienteDisparado) {
                 siguienteDisparado = true;
                 idx++;
@@ -9530,8 +9525,8 @@ async function reproducirVocesEnSecuencia(audios) {
             }
         };
 
-        // Le damos play (esto burla la restricción del celular)
-        voz.start();
+        // Al usar el reproductor reciclado, Safari y Chrome lo dejan sonar
+        reproductorVozGuia.play().catch(e => console.warn("Audio de voz no disponible:", e));
     }
 
     playNext();
