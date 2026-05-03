@@ -9478,55 +9478,73 @@ function anunciarVozGuia(texto, esRepeticion = false, esUltimaRepeticion = false
 async function reproducirVocesEnSecuencia(audios) {
     if (!audios || audios.length === 0) return;
 
-    const blobs = await Promise.all(audios.map(url =>
-        fetch(url).then(res => res.blob()).catch(() => null)
+    // 1. En lugar de blobs, pedimos "arrayBuffers" para el motor profesional
+    const buffersCrudos = await Promise.all(audios.map(url =>
+        fetch(url).then(res => res.arrayBuffer()).catch(() => null)
     ));
+
+    // 2. Nos colgamos del motor de audio principal que el celular YA desbloqueó
+    if (typeof audioCtx === 'undefined' || !audioCtx) {
+        window.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    }
+    if (audioCtx.state === 'suspended') {
+        try { audioCtx.resume(); } catch(e){}
+    }
 
     let idx = 0;
 
     function playNext() {
-        if (idx >= blobs.length) return;
+        if (idx >= buffersCrudos.length) return;
 
-        const blob = blobs[idx];
-        if (!blob) {
+        const arrBuffer = buffersCrudos[idx];
+        if (!arrBuffer) {
             idx++;
             playNext();
             return;
         }
 
-        const urlSegura = URL.createObjectURL(blob);
-        
-        // 🔥 EL CAMBIO MAESTRO: En vez de "const voz = new Audio()", 
-        // usamos el reproductor global que el celular YA autorizó en el conteo.
-        reproductorVozGuia.src = urlSegura;
-        reproductorVozGuia.load(); // Obliga al celular a registrar el cambio de pista
+        // Clonamos la data porque el decodificador la destruye al leerla
+        const datosAudio = arrBuffer.slice(0);
 
-        let siguienteDisparado = false;
-
-        reproductorVozGuia.onloadedmetadata = () => {
-            // Tu misma matemática perfecta
-            const tiempoDeEspera = (reproductorVozGuia.duration - 0.7) * 1000;
+        // 🔥 FIX MAESTRO PARA CELULARES: Usamos "Callbacks" (function) en lugar de Promesas. 
+        // Safari (iPhone) se bloquea si usas promesas modernas para decodificar audio.
+        audioCtx.decodeAudioData(datosAudio, function(audioBuffer) {
             
+            // Reemplazamos "new Audio()" por el reproductor nativo del sistema
+            const voz = audioCtx.createBufferSource();
+            voz.buffer = audioBuffer;
+            voz.connect(audioCtx.destination);
+
+            let siguienteDisparado = false;
+
+            // Tu misma matemática de tiempos original
+            const tiempoDeEspera = (audioBuffer.duration - 0.7) * 1000;
+            
+            // Reemplaza a onloadedmetadata (esto NO falla nunca en móviles)
             setTimeout(() => {
                 if (!siguienteDisparado) {
                     siguienteDisparado = true;
                     idx++;
                     playNext();
                 }
-            }, Math.max(0, tiempoDeEspera)); 
-        };
+            }, Math.max(0, tiempoDeEspera));
 
-        reproductorVozGuia.onended = () => {
-            URL.revokeObjectURL(urlSegura); 
-            if (!siguienteDisparado) {
-                siguienteDisparado = true;
-                idx++;
-                playNext();
-            }
-        };
+            voz.onended = () => {
+                if (!siguienteDisparado) {
+                    siguienteDisparado = true;
+                    idx++;
+                    playNext();
+                }
+            };
 
-        // Al usar el reproductor reciclado, Safari y Chrome lo dejan sonar
-        reproductorVozGuia.play().catch(e => console.warn("Audio de voz no disponible:", e));
+            // Le damos play (burlamos la barrera anti-spam)
+            voz.start(0);
+
+        }, function(err) {
+            console.warn("Error decodificando audio en el celular:", err);
+            idx++;
+            playNext();
+        });
     }
 
     playNext();
