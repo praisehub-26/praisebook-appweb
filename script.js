@@ -9478,58 +9478,50 @@ function anunciarVozGuia(texto, esRepeticion = false, esUltimaRepeticion = false
 async function reproducirVocesEnSecuencia(audios) {
     if (!audios || audios.length === 0) return;
 
-    const blobs = await Promise.all(audios.map(url =>
-        fetch(url).then(res => res.blob()).catch(() => null)
-    ));
-
-    let idx = 0;
-
-    function playNext() {
-        if (idx >= blobs.length) return;
-
-        const blob = blobs[idx];
-        if (!blob) {
-            idx++;
-            playNext();
-            return;
-        }
-
-        const urlSegura = URL.createObjectURL(blob);
-        
-        // 🔥 EL CAMBIO MAESTRO: En vez de "const voz = new Audio()", 
-        // usamos el reproductor global que el celular YA autorizó en el conteo.
-        reproductorVozGuia.src = urlSegura;
-        reproductorVozGuia.load(); // Obliga al celular a registrar el cambio de pista
-
-        let siguienteDisparado = false;
-
-        reproductorVozGuia.onloadedmetadata = () => {
-            // Tu misma matemática perfecta
-            const tiempoDeEspera = (reproductorVozGuia.duration - 0.7) * 1000;
-            
-            setTimeout(() => {
-                if (!siguienteDisparado) {
-                    siguienteDisparado = true;
-                    idx++;
-                    playNext();
-                }
-            }, Math.max(0, tiempoDeEspera)); 
-        };
-
-        reproductorVozGuia.onended = () => {
-            URL.revokeObjectURL(urlSegura); 
-            if (!siguienteDisparado) {
-                siguienteDisparado = true;
-                idx++;
-                playNext();
-            }
-        };
-
-        // Al usar el reproductor reciclado, Safari y Chrome lo dejan sonar
-        reproductorVozGuia.play().catch(e => console.warn("Audio de voz no disponible:", e));
+    // 1. Nos colgamos del motor de audio principal que ya está desbloqueado
+    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    if (audioCtx.state === 'suspended') {
+        try { await audioCtx.resume(); } catch(e){}
     }
 
-    playNext();
+    // 2. Descargamos y decodificamos a prueba de móviles (El blindaje para Safari/Chrome)
+    const buffers = [];
+    for (let i = 0; i < audios.length; i++) {
+        try {
+            const res = await fetch(audios[i]);
+            const arrayBuffer = await res.arrayBuffer();
+            
+            // 🔥 EL FIX MAESTRO PARA CELULARES:
+            // Envolvemos el decodificador en una Promesa clásica. 
+            // Esto evita que Safari y Android se queden mudos.
+            const buffer = await new Promise((resolve, reject) => {
+                audioCtx.decodeAudioData(arrayBuffer, resolve, reject);
+            });
+            
+            if (buffer) buffers.push(buffer);
+        } catch (err) {
+            console.warn("Error cargando voz guía:", audios[i]);
+        }
+    }
+
+    if (buffers.length === 0) return;
+
+    // 3. Programamos la reproducción en el reloj interno perfecto del procesador
+    let tiempoDeDisparo = audioCtx.currentTime;
+
+    for (let i = 0; i < buffers.length; i++) {
+        const buffer = buffers[i];
+        const fuente = audioCtx.createBufferSource();
+        fuente.buffer = buffer;
+        fuente.connect(audioCtx.destination);
+        
+        // El audio dispara exactamente cuando le toca
+        fuente.start(tiempoDeDisparo);
+        
+        // Tu misma matemática perfecta para encadenar las palabras fluido
+        let avance = Math.max(0.1, buffer.duration - 0.7);
+        tiempoDeDisparo += avance;
+    }
 }
 // ESTO ES UN EJEMPLO DE DÓNDE INSERTARLO EN TU CÓDIGO DE METRÓNOMO
 function playNextBeat() {
