@@ -1,0 +1,1522 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, shrink-to-fit=no">
+    <title>PraiseBook</title>
+	
+	<meta name="mobile-web-app-capable" content="yes">
+
+	<meta name="apple-mobile-web-app-capable" content="yes">
+	<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+	<meta name="apple-mobile-web-app-title" content="PraiseBook">
+    <link rel="apple-touch-icon" href="pad.png">
+    
+    <link rel="stylesheet" href="style.css?v=3">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.4.21/mammoth.browser.min.js"></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+	<script>
+		// Inicializa el motor de PDF al cargar la página
+		window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+	</script>
+	<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js" defer></script>
+	<script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/localforage/1.10.0/localforage.min.js"></script>
+	<script src="https://apis.google.com/js/api.js"></script>
+	<script src="https://accounts.google.com/gsi/client"></script>
+</head>
+	<body>
+
+		<div class="app-wrapper">
+			<header class="top-bar">
+				<div class="header-left">
+					<span class="material-icons menu-icon-large" onclick="toggleSongsPanel()">queue_music</span>
+				</div>
+				
+				<div class="header-center">
+					<div class="song-title-mini" id="header-song-title" data-i18n="select_song_title">Selecciona una canción</div>
+					<div class="clock" id="clock">00:00</div>
+				</div>
+				
+				<div class="header-right">
+					<span class="material-icons menu-icon-large" onclick="abrirConfig()" style="cursor: pointer;">settings</span>
+					
+					<span class="material-icons" onclick="editarContenido()" style="cursor: pointer;">edit</span>
+					
+					<span class="material-icons" onclick="compartirCancionActual()" style="cursor: pointer;">share</span>
+					
+					<span class="material-icons" id="btn-rayo" onclick="toggleQuickAccess()" style="cursor: pointer;">flash_on</span>
+				</div>
+			</header>
+
+			<main class="song-viewer" id="viewer">
+				<div class="song-info-header">
+					<div class="title-author-box">
+						<h1 class="main-title">---</h1>
+						<span class="author-name" data-i18n="select_song_title">Selecciona una canción</span>
+					</div>
+					
+					<div class="tone-capo-wrapper" style="display: flex; flex-direction: column; align-items: center; gap: 5px;">
+						<div class="key-badge" id="current-key" onclick="openToneModal()" style="display: flex; flex-direction: row; align-items: center; padding: 8px 15px; cursor: pointer; gap: 8px; white-space: nowrap;">
+							
+							<span style="font-size: 0.75rem; text-transform: uppercase; opacity: 0.8; line-height: 1; display: inline-block;" data-i18n="lbl_tone_header">TONO:</span>
+							
+							<span id="header-tone-label" style="font-size: 1.4rem; font-weight: bold; line-height: 1; display: inline-block;">--</span>
+						</div>
+						
+						<div id="capo-indicator" style="font-size: 1.1rem; color: #fff; font-family: var(--f-bold); min-height: 1.2em;">
+						</div>
+					</div>
+				</div>
+
+				<div class="lyrics-wrapper" id="carousel-wrapper">
+					<section class="lyrics-container" id="carousel-rail">
+						</section>
+				</div>
+			</main>
+
+			<div class="floating-controls glass dynamic-island">
+				
+				<button class="cap-btn btn-large" onclick="toggleMetronomo()" id="metroBtn" title="Metrónomo" data-i18n-title="tt_metro">
+					<img src="metronomo.png" id="metroIcon" style="width: 28px; height: 28px; object-fit: contain; opacity: 0.8;">
+				</button>
+
+				<div class="cap-divider"></div>
+
+				<div class="cap-center-group">
+					<button class="cap-btn text-btn btn-velocidad-txt" onclick="cambiarVelocidad(-0.1)" title="Más lento" data-i18n-title="tt_slower">-</button>
+					
+					<button class="cap-btn btn-large" onclick="toggleScroll()" id="scrollBtn" title="AutoScroll" data-i18n-title="tt_scroll">
+						<span id="scrollIcon" style="font-size: 26px; font-family: sans-serif;">▲</span>
+					</button>
+					
+					<button class="cap-btn text-btn btn-velocidad-txt" onclick="cambiarVelocidad(0.1)" title="Más rápido" data-i18n-title="tt_faster">+</button>
+					
+					<input type="range" id="scrollSpeed" class="cap-slider" min="0.1" max="5" step="0.1" value="0.5" style="display: none;">
+				</div>
+
+				<div class="cap-divider"></div>
+
+				<div class="cap-zoom-group">
+					<span class="material-icons cap-btn" onclick="zoom(-0.1)" title="Disminuir tamaño" data-i18n-title="tt_zoom_out">remove</span>
+					<span class="cap-btn reset-btn" onclick="resetZoom()" title="Restablecer tamaño" data-i18n-title="tt_zoom_reset">R</span>
+					<span class="material-icons cap-btn" onclick="zoom(0.1)" title="Aumentar tamaño" data-i18n-title="tt_zoom_in">add</span>
+				</div>
+
+			</div>
+			<div id="floating-player" class="floating-player glass dynamic-island" style="display: none;">
+				
+				<div class="player-content-wrapper" style="display: flex; align-items: center; gap: 10px;">
+					<div class="cap-center-group">
+						<button class="cap-btn" id="btn-player-prev">
+							<span class="material-icons">fast_rewind</span>
+						</button>
+						<button class="cap-btn btn-large" id="btn-player-play" onclick="toggleReproductorPlay()">
+							<span class="material-icons" id="icon-player-play" style="font-size: 28px;">play_arrow</span>
+						</button>
+						<button class="cap-btn" id="btn-player-next">
+							<span class="material-icons">fast_forward</span>
+						</button>
+					</div>
+
+					<div class="cap-divider"></div>
+
+					<button class="cap-btn" id="btn-player-pads" onclick="togglePadDesdeFlotante()" title="Teclado / Pads" data-i18n-title="tt_pads">
+						<img src="pad.png" id="img-player-pads" style="width: 28px; height: 28px; object-fit: contain; opacity: 0.8; transition: all 0.3s ease;">
+					</button>
+				</div>
+
+				<div id="player-handle" onclick="togglePlayerPanel(event)">
+					<span class="material-icons" id="player-handle-icon" style="font-size: 24px;">chevron_right</span>
+				</div>
+				
+			</div>
+		</div>
+		<div id="tone-modal" class="modal-overlay" onclick="this.classList.remove('active')">
+			<div class="transpose-modal" onclick="event.stopPropagation()">
+				<h3 style="color: var(--accent-color); font-family: 'Inter-Medium', sans-serif; font-size: 1rem; margin-top: 10; margin-bottom: 15px; text-transform: uppercase; text-align: center;" data-i18n="tone_adjust">AJUSTE DE TONO</h3>
+				<div class="linea-separadora"></div>
+				
+				<div class="modal-body">
+					<div class="tone-main-controls">
+						<button onclick="shiftModalTone(-1)" class="btn-modal-round">-</button>
+						<div id="display-tonalidad" class="display-grande">--</div>
+						<button onclick="shiftModalTone(1)" class="btn-modal-round">+</button>
+					</div>
+
+					<div class="fila-ajuste">
+						<span class="etiqueta" data-i18n="tone_label">Tono:</span>
+						<div class="selector-pestaña" onclick="abrirMenuTonoModal(event)" style="cursor: pointer; position: relative;">
+							<span id="modal-tone-value">--</span>
+							<span class="material-icons">expand_more</span>
+							<div id="menu-tono-modal" class="options-menu" style="top: 100%; right: 0; min-width: 100px; max-height: 200px; overflow-y: auto; margin-top: 5px;"></div>
+						</div>
+					</div>
+
+					<div class="fila-ajuste">
+						<span class="etiqueta" data-i18n="capo_label">Capo:</span>
+						<div class="capo-controls">
+							<div class="cuadrito-capo" onclick="resetCapo()">X</div>
+							<span class="btn-suelto" onclick="changeCapo(-1)">−</span>
+							<div class="cuadrito-capo activo" id="capo-value">0</div>
+							<span class="btn-suelto" onclick="changeCapo(1)">+</span>
+						</div>
+					</div>
+
+					<div class="divisor-modal"></div>
+
+					<div class="fila-ajuste">
+						<span class="etiqueta" data-i18n="lbl_bpm">BPM:</span>
+						<div class="capo-controls">
+							<span class="btn-suelto" onclick="changeBPM(-5)">−</span>
+							<input type="tel" id="bpm-input" value="85" class="input-bpm-modal" oninput="actualizarBPMDirecto()">
+							<span class="btn-suelto" onclick="changeBPM(5)">+</span>
+						</div>
+					</div>
+
+					<div class="fila-ajuste">
+						<span class="etiqueta" data-i18n="lbl_speed">Vel. Letra:</span>
+						<div class="capo-controls">
+							<span class="btn-suelto" onclick="cambiarVelocidad(-0.1)">−</span>
+							<input type="tel" id="modal-vel-letra-val" value="5" class="input-bpm-modal" onchange="actualizarVelocidadDesdeModal(this.value)">
+							<span class="btn-suelto" onclick="cambiarVelocidad(0.1)">+</span>
+						</div>
+					</div>
+
+					<div class="divisor-modal"></div>
+
+					<div class="fila-ajuste">
+						<span class="etiqueta" data-i18n="lbl_meter">Compás:</span>
+						<div class="capo-controls">
+							<span class="btn-suelto" onclick="changeCompas(-1)">−</span>
+							<span id="compas-display" style="width: 40px; text-align: center; color: white;">4/4</span>
+							<span class="btn-suelto" onclick="changeCompas(1)">+</span>
+						</div>
+					</div>
+
+					<div class="fila-ajuste">
+						<span class="etiqueta" data-i18n="lbl_accent">Acento:</span>
+						<label class="switch-elegante" style="transform: scale(0.8); transform-origin: right; margin: 0;">
+							<input type="checkbox" id="metro-enfasis" checked>
+							<span class="slider-round"></span>
+						</label>
+					</div>
+
+					<div class="fila-ajuste" style="margin-top: 15px;">
+						<span class="etiqueta" data-i18n="lbl_pulse">Pulso:</span>
+						<div class="segment-control" style="width: 140px; background: transparent !important; border: none !important;">
+							<div id="btn-negras" class="segment-item active" onclick="cambiarSubdivisionMetro(1)" data-i18n="pulse_quarter">Negras</div>
+							<div id="btn-corcheas" class="segment-item" onclick="cambiarSubdivisionMetro(2)" data-i18n="pulse_eighth">Corcheas</div>
+						</div>
+					</div>
+
+					<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+    
+						<div style="display: flex; align-items: center; gap: 8px;">
+							<span class="etiqueta" style="width: 60px;" data-i18n="lbl_sound">Sonido:</span>
+							<label class="switch-elegante" style="transform: scale(0.8); transform-origin: left;">
+								<input type="checkbox" id="metro-sound" checked>
+								<span class="slider-round"></span>
+							</label>
+						</div>
+
+						<div style="display: flex; align-items: center; gap: 8px;">
+							<span class="etiqueta" style="width: 60px;" data-i18n="lbl_light">Luz:</span>
+							<label class="switch-elegante" style="transform: scale(0.8); transform-origin: left;">
+								<input type="checkbox" id="metro-light" checked>
+								<span class="slider-round"></span>
+							</label>
+						</div>
+
+						<div style="display: flex; align-items: center; gap: 8px;">
+							<span class="etiqueta" style="width: 60px;" data-i18n="lbl_voice">Voz:</span>
+							<label class="switch-elegante" style="transform: scale(0.8); transform-origin: left;">
+								<input type="checkbox" id="metro-voice" checked>
+								<span class="slider-round"></span>
+							</label>
+						</div>
+
+						<div style="display: flex; align-items: center; gap: 8px;">
+							<span class="etiqueta" style="width: 60px;" data-i18n="lbl_guide_line">Línea:</span>
+							<label class="switch-elegante" style="transform: scale(0.8); transform-origin: left;">
+								<input type="checkbox" id="metro-line" onchange="toggleLineaSync(this.checked)">
+								<span class="slider-round"></span>
+							</label>
+						</div>
+
+					</div>
+
+				</div>
+			</div>
+		</div>
+			<div id="quick-modal" class="quick-modal-overlay" onclick="cerrarQuickAccess()">
+				<div class="quick-panel" onclick="event.stopPropagation()">
+					<div class="quick-header" style="justify-content: space-between; padding-right: 5px;">
+						<div style="display: flex; align-items: center; gap: 10px;">
+							<span class="material-icons" style="color: var(--accent-color); font-size: 1.5rem;">bolt</span>
+							<span class="quick-title" data-i18n="qa_title">ACCESOS RÁPIDOS</span>
+						</div>
+						<span class="material-icons" onclick="mostrarInfoAccesosRapidos()" style="color: #666; font-size: 1.3rem; cursor: pointer; transition: color 0.2s;">info_outline</span>
+					</div>
+
+					<div class="quick-grid">
+						<div class="q-btn" id="q-btn-player" onclick="toggleReproductorRapido()">
+							<span class="material-icons">play_circle</span><span data-i18n="qa_play">PLAY</span>
+						</div>
+						<div class="q-btn active" id="q-btn-ver-acordes" onclick="toggleVerAcordesRapido()">
+							<span class="material-icons" id="icon-ver-acordes">music_note</span><span id="txt-ver-acordes" data-i18n="qa_chords_on">ACORDES: ON</span>
+						</div>
+						<div class="q-btn active" id="q-btn-ver-letra" onclick="toggleVerLetraRapido()">
+							<span class="material-icons" id="icon-ver-letra">notes</span><span id="txt-ver-letra" data-i18n="qa_lyrics_on">LETRA: ON</span>
+						</div>
+						<div class="q-btn active" id="q-btn-notacion" onclick="toggleNotacionRapido()">
+							<span class="chord-icon" id="icon-notacion" style="font-family: var(--f-bold);">#</span><span id="txt-notacion" data-i18n="qa_sharp">SOSTENIDO</span>
+						</div>
+						<div class="q-btn" id="q-btn-autoplay" onclick="toggleAutoplayRapido()">
+							<span class="material-icons" id="icon-autoplay">stop_circle</span>
+							<span id="txt-autoplay" data-i18n="qa_autoplay">AUTOPLAY: OFF</span>
+						</div>
+						<div class="q-btn" id="q-btn-pad" onclick="togglePadRapido()">
+							<img src="pad.png" style="width: 24px; height: 24px; object-fit: contain; opacity: 0.7; transition: 0.2s;" id="img-pad-rapido">
+							<span data-i18n="qa_pads">PADS</span>
+						</div>
+						<div class="q-btn" id="q-btn-pedal" onclick="togglePedalRapido()">
+							<span class="material-icons">album</span><span id="txt-pedal-estado" data-i18n="qa_pedal_off">PEDAL: OFF</span>
+						</div>
+						<div class="q-btn" onclick="saltarAConfigRapido('afinador')">
+							<img src="afinador.png" id="img-afinador-rapido" style="width: 24px; height: 24px; object-fit: contain; opacity: 0.7; transition: 0.2s; margin-bottom: 2px;">
+							<span data-i18n="qa_tuner">AFINADOR</span>
+						</div>
+						<div class="q-btn" id="q-btn-cifrado" onclick="toggleCifradoRapido()">
+							<span id="notation-icon" class="chord-icon">C</span>
+							<span id="txt-cifrado-estado" data-i18n="cipher_std">Estándar</span>
+						</div>
+						<div class="q-btn" id="q-btn-diagramas" onclick="toggleDiagramasRapido()">
+							<span class="material-icons">queue_music</span><span data-i18n="qa_diagram">DIAGRAMA</span>
+						</div>
+						<div class="q-btn" id="q-btn-instrumento" onclick="toggleInstrumentoRapido()">
+							<img src="guitar.png" id="img-inst-rapido" style="width: 24px; height: 24px; object-fit: contain; opacity: 0.7; transition: 0.2s; margin-bottom: 2px;">
+							<span id="txt-instrumento-estado" data-i18n="inst_guitar">GUITAR</span>
+						</div>
+						<div class="q-btn" id="q-btn-theme" onclick="toggleTemaRapido()">
+							<span class="material-icons">light_mode</span><span id="txt-theme-estado" data-i18n="qa_theme_dark">Tema Oscuro</span>
+						</div>
+						<div class="q-btn" onclick="cerrarQuickAccess(); abrirPaletaColor('enfasis');">
+							<span class="material-icons">palette</span><span data-i18n="qa_emphasis">ENFASIS</span>
+						</div>
+						<div class="q-btn" onclick="saltarAConfigRapido('personalizacion')">
+							<span class="material-icons">text_format</span><span data-i18n="qa_styles">ESTILOS</span>
+						</div>
+						<div class="q-btn" onclick="cerrarQuickAccess(); abrirModalSincronizacion();">
+							<span class="material-icons">computer</span><span data-i18n="qa_sync">SYNC PC</span>
+						</div>
+						<div class="q-btn" onclick="imprimirDesdeRayito()">
+							<span class="material-icons">print</span><span data-i18n="qa_print">IMPRIMIR</span>
+						</div>
+						<div class="q-btn" id="q-btn-sync-banda" onclick="toggleSyncBanda()">
+							<span class="material-icons" style="color: #2196F3 !important;">cell_tower</span>
+							<span data-i18n="qa_sync_banda">SYNC BANDA</span>
+						</div>
+						<div class="q-btn" onclick="abrirModalBusqueda()">
+							<span class="material-icons" style="color: var(--accent-color) !important;">language</span>
+							<span data-i18n="qa_search">Buscar ONLINE</span>
+						</div>
+					</div>
+				</div>
+			</div>
+
+			<div id="songs-panel" class="side-panel-overlay" onclick="closeFromOverlay()">
+		<div class="panel-content" onclick="event.stopPropagation()">
+				<div class="panel-header">
+					<span class="material-icons" onclick="toggleSongsPanel()">arrow_back</span>
+					<span class="panel-title-text" data-i18n="panel_title_songs">Todas las canciones</span>
+				</div>
+					
+			<div class="search-section">
+				<div class="search-bar">
+					<span class="material-icons" style="color: #666 !important;">search</span>
+					<input type="text" id="song-search" data-i18n="search_song" placeholder="Buscar canción" oninput="filterSongs()">
+				</div>
+						
+				<div class="sort-bar" style="display: flex; justify-content: flex-end; padding-right: 15px; position: relative; margin-top: 5px;">
+					<div class="sort-selector-wrapper" onclick="toggleSortMenu(event)" style="cursor: pointer; display: flex; align-items: center; gap: 5px; background: rgba(255,255,255,0.05); padding: 5px 12px; border-radius: 20px;">
+						<span style="font-size: 0.85rem; color: #aaa;"><span data-i18n="sort_by">Ordenar por: </span> <b id="current-sort-label" style="color: var(--accent-color);" data-i18n="js_sort_date_short">Última modif.</b></span>
+						<span class="material-icons" style="font-size: 1.1rem; color: #888;">expand_more</span>
+					</div>
+							
+					<div id="sort-options-menu" class="options-menu" style="top: 35px; right: 15px; width: 230px; z-index: 10000;">
+						<div class="menu-item sort-song-opt" onclick="changeSort('date', 'canciones')">
+							<span class="material-icons">schedule</span> <span data-i18n="sort_date">Última modificación</span>
+						</div>
+						<div class="menu-item sort-song-opt" onclick="changeSort('visual', 'canciones')">
+							<span class="material-icons">wallpaper</span> <span data-i18n="sort_visual">Visuales primero</span>
+						</div>
+						<div class="menu-item sort-song-opt" onclick="changeSort('title', 'canciones')">
+							<span class="material-icons">sort_by_alpha</span> <span data-i18n="sort_alpha">Título (A-Z)</span>
+						</div>
+						<div class="menu-item sort-song-opt" onclick="changeSort('artist', 'canciones')">
+							<span class="material-icons">person</span> <span data-i18n="sort_artist">Artista (A-Z)</span>
+						</div>
+
+						<!-- Opciones para Carpetas -->
+						<div class="menu-item sort-folder-opt" style="display: none;" onclick="changeSort('date', 'carpetas')">
+							<span class="material-icons">schedule</span> <span data-i18n="sort_date">Última modificación</span>
+						</div>
+						<div class="menu-item sort-folder-opt" style="display: none;" onclick="changeSort('nombre', 'carpetas')">
+							<span class="material-icons">sort_by_alpha</span> <span data-i18n="sort_alpha">Título (A-Z)</span>
+						</div>
+					</div>
+				</div>
+			</div>
+
+						<div class="songs-list" id="main-songs-list"></div>
+
+						<div id="bar-songs" class="actions-bar-short"> 
+				<div id="contenedor-importar" style="position: relative; display: flex; align-items: center;">
+					<span class="material-icons" style="cursor:pointer;" onclick="toggleImportMenu(event)">file_upload</span>
+						
+					<div id="import-options-menu" class="bulk-menu-up" style="bottom: 50px; left: 0; min-width: 240px;">
+						<div class="menu-item" onclick="iniciarGoogleDrive()">
+							<span class="material-icons">add_to_drive</span> <span data-i18n="import_drive">Importar de Drive</span>
+						</div>
+						<div class="menu-item" onclick="importarArchivo('pdf', 'edit')">
+							<span class="material-icons">edit_note</span> <span data-i18n="import_pdf">Importar de PDF</span>
+						</div>
+						<div class="menu-item" onclick="importarArchivo('word', 'edit')">
+							<span class="material-icons">description</span> <span data-i18n="import_word">Importar de Word</span>
+						</div>
+						<div class="menu-item" onclick="importarArchivo('pdf', 'view')">
+							<span class="material-icons">visibility</span> <span data-i18n="view_pdf">Visualizar PDF</span>
+						</div>
+						<div class="menu-item" onclick="importarArchivo('image', 'view')">
+							<span class="material-icons">image</span> <span data-i18n="view_img">Visualizar Imagen</span>
+						</div>
+							
+						<div style="height: 1px; background: #333; margin: 4px 0;"></div> 
+							
+						<div class="menu-item" onclick="importarArchivo('pbk', 'import')">
+							<span class="material-icons">library_music</span> <span data-i18n="import_pbk">Importar PraiseBook (.pbk)</span>
+						</div>
+						<div class="menu-item" onclick="importarArchivo('cho', 'import')">
+								<span class="material-icons">queue_music</span> <span data-i18n="import_cho">Importar ChordPro (.cho)</span>
+						</div>
+					</div>
+				</div>
+				<div id="centro-bar-songs" style="flex: 1; text-align: center; display: flex; justify-content: center; align-items: center; position: relative;">
+					<span id="btn-crear-estandar" onclick="prepararNuevaCancion()" style="cursor:pointer; margin-left: 15px;" data-i18n="create_song">Crear canción</span>
+							
+					<div id="iconos-bulk-reemplazo" style="display: none; align-items: center; justify-content: space-evenly; width: 100%; margin: 0 auto;">
+						<span class="material-icons" style="cursor:pointer; color: var(--accent-color); font-size: 1.4rem;" onclick="bulkAction('share')">share</span>
+						<span class="material-icons" style="cursor:pointer; color: var(--accent-color); font-size: 1.4rem;" onclick="bulkAction('move')">drive_file_move</span>
+						<span class="material-icons" style="cursor:pointer; color: #ffb347; font-size: 1.4rem; position: relative; top: 3px;" onclick="bulkAction('delete')">delete</span>
+					</div>
+				</div>
+
+				<span class="material-icons" style="cursor:pointer; margin-left: auto;" onclick="toggleBulkMenu(event)">more_vert</span>
+
+				<div id="bulk-options-menu" class="bulk-menu-up">
+					<div class="menu-item" onclick="bulkAction('select')"><span class="material-icons">check</span> <span data-i18n="bulk_select">Seleccionar</span></div>
+					<div class="menu-item" onclick="bulkAction('selectAll')"><span class="material-icons">done_all</span> <span data-i18n="bulk_select_all">Seleccionar todo</span></div>
+					<div class="menu-item" onclick="bulkAction('move')"><span class="material-icons">drive_file_move</span> <span data-i18n="bulk_move">Mover a:</span></div>
+					<div class="menu-item" onclick="bulkAction('share')"><span class="material-icons">share</span> <span data-i18n="bulk_share">Compartir</span></div>
+					<div class="menu-item delete" onclick="bulkAction('delete')"><span class="material-icons">delete</span> <span data-i18n="bulk_delete">Eliminar</span></div>
+				</div>
+			</div>
+
+			<div id="bar-folders" class="actions-bar-short" style="display: none;"> 
+				<div id="centro-bar-folders" style="flex: 1; text-align: center; display: flex; justify-content: center; align-items: center; position: relative;">
+					<span id="btn-crear-carpeta" onclick="prepararNuevaCarpeta()" style="cursor:pointer; margin-left: 15px;" data-i18n="create_folder">Nueva carpeta</span>
+					
+					<div id="iconos-bulk-carpetas" style="display: none; align-items: center; justify-content: center; gap: 30px; width: 100%; margin: 0 auto;">
+						<span class="material-icons" style="cursor:pointer; color: var(--accent-color); font-size: 1.4rem;" onclick="compartirCarpetas()">share</span>
+						<span class="material-icons" style="cursor:pointer; color: #ffb347; font-size: 1.4rem; position: relative; top: 3px;" onclick="confirmarEliminarMasivoCarpetas()">delete</span>
+					</div>
+				</div>
+
+				<span class="material-icons" style="cursor:pointer; position: absolute; right: 20px;" onclick="toggleFolderBulkMenu(event)">more_vert</span>
+
+				<div id="folder-bulk-menu" class="bulk-menu-up">
+					<div class="menu-item" onclick="modoSeleccionCarpetas()"><span class="material-icons">check</span> <span data-i18n="bulk_select">Seleccionar</span></div>
+					<div class="menu-item" onclick="seleccionarTodasCarpetas()"><span class="material-icons">done_all</span> <span data-i18n="bulk_select_all">Seleccionar todo</span></div>
+					<div class="menu-item" onclick="compartirCarpetas()"><span class="material-icons">share</span> <span data-i18n="bulk_share">Compartir</span></div>
+					<div class="menu-item delete" onclick="confirmarEliminarMasivoCarpetas()" style="color: #cd7000 !important;"><span class="material-icons">delete</span> <span data-i18n="bulk_delete">Eliminar</span></div>
+				</div>
+			</div>
+			<div class="bottom-nav-compact">
+				<div id="tab-songs" class="nav-item active" onclick="showSongsView()">
+					<span class="material-icons">music_note</span>
+					<span data-i18n="tab_songs">CANCIONES</span>
+				</div>
+				<div id="tab-folders" class="nav-item" onclick="showFoldersView()">
+					<span class="material-icons">folder</span>
+					<span data-i18n="tab_folders">CARPETAS</span>
+				</div>
+				<div class="nav-item" onclick="abrirConfig()">
+					<span class="material-icons">settings</span>
+					<span data-i18n="tab_settings">AJUSTES</span>
+				</div>
+			</div>
+			<div id="escudo-cierre" 
+				 onclick="event.stopPropagation(); cerrarTodoLoAbierto()" 
+				 style="display:none; position:absolute; top:0; left:0; width:100%; height:100%; z-index:8500; background:transparent;">
+			</div>
+		</div>
+
+		<div id="ventana-crear" class="create-modal-full">
+			<header class="create-header">
+				<div class="c-h-left" onclick="cerrarVentanaCrear()"><span class="material-icons">arrow_back</span></div>
+				<div class="c-h-center"><b data-i18n="new_song_header">NUEVA CANCIÓN</b></div>
+				<div class="c-h-right">
+					<span class="material-icons" style="color:var(--accent-color); font-size:1.8rem; cursor:pointer;" onclick="guardarNuevaCancion()">save</span>
+				</div>
+			</header>
+
+			<div class="create-body-new">
+				<label class="label-mini" data-i18n="lbl_title">TÍTULO DE LA CANCIÓN</label>
+				<div class="box-input" style="padding: 0 10px; display: flex; align-items: center;">
+					<input type="text" id="crear-titulo" data-i18n="plh_title" placeholder="Escribe el nombre aquí..." 
+						   style="border: none !important; background: transparent !important; outline: none !important; width: 100%; color: #fff; height: 35px; -webkit-appearance: none; appearance: none; box-shadow: none !important;">
+				</div>
+
+				<label class="label-mini" data-i18n="lbl_artist">ARTISTA/GRUPO</label>
+				<div class="box-input" style="padding: 0 10px; display: flex; align-items: center;">
+					<input type="text" id="crear-artista" data-i18n="plh_artist" placeholder="Nombre del artista..." 
+						   style="border: none !important; background: transparent !important; outline: none !important; width: 100%; color: #fff; height: 35px; -webkit-appearance: none; appearance: none; box-shadow: none !important;">
+				</div>
+				<div style="display: flex; gap: 10px; align-items: flex-end; margin-bottom: 15px; flex-wrap: wrap; justify-content: space-between;">
+				
+					<div style="flex: 1; min-width: 45px;">
+						<label class="label-mini" data-i18n="lbl_tone">TONO</label>
+						<div class="box-tone" style="width: 100%;">
+							<input type="text" id="crear-tono" placeholder="--" maxlength="3" 
+								   style="border: none !important; background: transparent !important; outline: none !important; width: 100%; height: 100%; color: var(--accent-color) !important; text-align: center; font-weight: bold; -webkit-appearance: none; appearance: none; box-shadow: none !important;">
+						</div>
+					</div>
+
+					<div style="flex: 1; min-width: 45px;">
+						<label class="label-mini" data-i18n="lbl_bpm">BPM</label>
+						<div class="box-tone" style="width: 100%;">
+							<input type="tel" id="crear-bpm" placeholder="85" maxlength="3" 
+								   oninput="this.value = this.value.replace(/[^0-9]/g, ''); if(parseInt(this.value)>300) this.value=300;"
+								   style="border: none !important; background: transparent !important; outline: none !important; width: 100%; height: 100%; color: var(--accent-color) !important; text-align: center; font-weight: bold; -webkit-appearance: none; appearance: none; box-shadow: none !important;">
+						</div>
+					</div>
+
+					<div style="flex: 1; min-width: 50px;">
+						<label class="label-mini" data-i18n="lbl_lyric_spd">Vel. Letra</label>
+						<div class="box-tone" style="width: 100%;">
+							<input type="tel" id="crear-vel-letra" placeholder="5" maxlength="2" 
+								   oninput="this.value = this.value.replace(/[^0-9]/g, ''); if(parseInt(this.value)>50) this.value='50';"
+								   style="border: none !important; background: transparent !important; outline: none !important; width: 100%; height: 100%; color: var(--accent-color) !important; text-align: center; font-weight: bold; -webkit-appearance: none; appearance: none; box-shadow: none !important;">
+						</div>
+					</div>
+
+					<div style="flex: 1.5; min-width: 70px;">
+						<label class="label-mini" data-i18n="lbl_capture">CAPTURA</label> 
+						<button class="box-tone btn-ocr-capture" onclick="iniciarCapturaOCR()" ...>
+							<span class="material-icons" style="font-size: 16px;">photo_camera</span>
+							<span style="font-size: 9px; margin-left: 2px; font-weight: bold;" data-i18n="lbl_photo">FOTO</span>
+						</button>
+					</div>
+
+				</div>
+
+				<input type="file" id="ocr-camera-input" accept="image/*" capture="environment" style="display: none;" onchange="procesarImagenOCR(this)">
+				<label class="label-mini" data-i18n="lbl_lyrics_chords">LETRA Y ACORDES</label>
+				<div class="bar-tools">
+					<button class="btn-t" onclick="mostrarInstrucciones()" style="padding: 0 15px; height: 38px; font-size: 0.65rem; font-weight: bold; font-family: var(--f-bold);" data-i18n="btn_instructions">INSTRUCCIONES</button>
+					<button class="btn-t" onclick="insertarCompases()" style="width: 38px; height: 38px; font-weight: bold; font-size: 1.4rem; color: var(--accent-color);" title="Insertar Compases">
+						&#119070;
+					</button>
+					<div class="analizador-container" style="justify-content: flex-start; padding: 0 10px;">
+						<div id="display-notas" class="notas-footer" style="margin: 0; color: var(--accent-color); font-size: 0.85rem; font-family: var(--f-bold); width: 100%; text-align: left; opacity: 0.6;" data-i18n="waiting_notes">Esperando notas...</div>
+					</div>
+
+					<button class="btn-t" style="background: var(--accent-color); color: #000; width: 40px; height: 38px;" onclick="borrarUltimo()">
+						<span class="material-icons" style="font-size: 20px;">undo</span>
+					</button>
+				</div>
+
+				<div class="editor-full-frame">
+					<textarea id="crear-letra" data-i18n="plh_lyrics" placeholder="Escribe la letra aquí..."></textarea>
+				</div>
+			</div>
+		</div>
+
+		<div id="move-modal" class="modal-overlay" onclick="closeMoveModal()" style="display: none; z-index: 10000; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.8); justify-content: center; align-items: center;">
+			<div class="modal-content" style="width: 85%; max-width: 320px; border-radius: 15px; padding: 25px; background: #222; border: 2px solid var(--accent-color); box-shadow: 0 10px 25px rgba(0,0,0,0.5);" onclick="event.stopPropagation()">
+				<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+					<h3 style="margin: 0; color: #cd7000; font-family: var(--f-bold); font-size: 1.4rem;" data-i18n="move_title">Mover a:</h3>
+					<span class="material-icons" onclick="closeMoveModal()" style="color: #888; cursor: pointer;">close</span>
+				</div>
+				<div style="height: 1px; background: #444; margin-bottom: 15px;"></div>
+				<div id="folders-list-dynamic" style="max-height: 250px; overflow-y: auto;"></div>
+				<div class="modal-footer" style="margin-top: 20px;">
+					<button class="btn-secondary" onclick="closeMoveModal()" style="width: 100%; padding: 12px; border-radius: 8px; background: #333; color: #eee; border: none; cursor: pointer;">Cancelar</button>
+				</div>
+			</div>
+		</div>
+
+		<div id="confirm-modal" class="modal-overlay" style="z-index: 9999999 !important; position: fixed !important; top: 0; left: 0; width: 100vw; height: 100vh; justify-content: center; align-items: center; background: rgba(0,0,0,0.8);">
+			<div class="modal-content" style="width: 85%; max-width: 320px; border-radius: 15px; padding: 25px; background: #222; border: 2px solid var(--accent-color); text-align: center; box-shadow: 0 10px 25px rgba(0,0,0,0.5);">
+				
+				<h3 id="confirm-title" style="margin-top: 0; color: var(--accent-color); font-family: var(--f-bold); font-size: 1.4rem;">¿Eliminar canción?</h3>
+				
+				<p id="confirm-message" style="color: #ccc; font-size: 1rem; margin-bottom: 25px; line-height: 1.4;">Esta acción no se puede deshacer.</p>
+				
+				<div class="modal-footer" style="display: flex; gap: 12px;">
+					<button class="btn-secondary" onclick="closeConfirm()" style="flex: 1; padding: 12px; border-radius: 8px; background: #333; color: #eee; border: none; cursor: pointer;" data-i18n="btn_cancel">Cancelar</button>
+					
+					<button id="btn-confirm-delete" style="flex: 1; padding: 12px; border-radius: 8px; background: var(--accent-color); color: #000; border: none; font-family: var(--f-bold); font-size: 1rem; cursor: pointer;" data-i18n="btn_delete">Eliminar</button>
+				</div>
+			</div>
+		</div>
+		<div id="config-modal" class="modal-overlay" onclick="cerrarConfig()" style="z-index: 999000;">
+			<div class="config-window" onclick="event.stopPropagation()">
+				<header class="config-header">
+					<span class="material-icons" onclick="navegarAtrasConfig()" style="font-size: 1.8rem; color: var(--accent-color); cursor: pointer;">arrow_back</span>
+					<span class="panel-title-text" style="font-size: 1.15rem; color: #fff; font-family: var(--f-medium);">Ajustes</span>
+				</header>
+
+				<div class="config-container">
+					<aside class="config-sidebar">
+						<div class="side-item active" onclick="cambiarSeccion(this, 'general')" data-i18n="menu_general">General</div>
+						<div class="side-item" onclick="cambiarSeccion(this, 'personalizacion')" data-i18n="menu_personalization">Personalización</div>
+						<div class="side-item" onclick="cambiarSeccion(this, 'diagramas')" data-i18n="menu_diagrams">Diagramas de Acordes</div>
+						<div class="side-item" onclick="cambiarSeccion(this, 'pedal')" data-i18n="menu_pedal">Pedal de Acompañamiento</div>
+						<div class="side-item" onclick="cambiarSeccion(this, 'pads')" data-i18n="menu_pads">Pads de Acompañamiento</div>
+						<div class="side-item" onclick="cambiarSeccion(this, 'avanzado')" data-i18n="menu_advanced">Avanzado</div>
+						<div class="side-item" onclick="cambiarSeccion(this, 'copia')" data-i18n="menu_backup">Copia de Seguridad y Restauración</div>
+						<div class="side-item" onclick="cambiarSeccion(this, 'acerca')" data-i18n="menu_about">Acerca de</div>
+						<div class="side-item" onclick="cambiarSeccion(this, 'comprar')" data-i18n="menu_pro">Comprar versión completa</div>
+					</aside>
+					<main class="config-content" id="config-main-view">
+						<div id="section-general">
+							<h3 class="section-title" style="margin-top: 35px;" data-i18n="lang_title">Idioma:</h3>
+							<div class="config-option-row">
+								<label class="radio-container">
+									<input type="radio" name="idioma" id="radio-lang-es" value="es" onchange="cambiarIdioma('es')">
+									<span class="radio-mark"></span> <span data-i18n="lang_es">Español</span>
+								</label>
+							</div>
+							<div class="config-option-row">
+								<label class="radio-container">
+									<input type="radio" name="idioma" id="radio-lang-en" value="en" onchange="cambiarIdioma('en')">
+									<span class="radio-mark"></span> <span data-i18n="lang_en">Inglés</span>
+								</label>
+							</div>
+							<h3 class="section-title" data-i18n="theme_title">Tema:</h3>
+							<div class="config-option-row">
+								<label class="radio-container">
+									<input type="radio" name="tema" id="radio-tema-claro" value="claro" onchange="cambiarTemaGlobal('claro')">
+									<span class="radio-mark"></span> <span data-i18n="theme_light">Claro</span>
+								</label>
+							</div>
+							<div class="config-option-row">
+								<label class="radio-container">
+									<input type="radio" name="tema" id="radio-tema-oscuro" value="oscuro" onchange="cambiarTemaGlobal('oscuro')">
+									<span class="radio-mark"></span> <span data-i18n="theme_dark">Oscuro</span>
+								</label>
+							</div>
+
+							<div class="config-option-row flex-between" style="margin-top: 15px; border-top: 1px solid #333; padding-top: 20px; align-items: center;" id="fila-enfasis">
+								<div class="icon-text-gap">
+									<span class="material-icons" style="font-size: 1.3rem; color: #888;">palette</span>
+									<span style="font-family: var(--f-medium); font-size: 0.95rem;" data-i18n="emphasis_color">Color de énfasis</span>
+								</div>
+								
+								<div id="btn-enfasis-color" class="btn-color-rectangular" onclick="abrirPaletaColor('enfasis')">
+									<span id="txt-enfasis-color">DEFAULT</span>
+								</div>
+							</div>
+
+							<h3 class="section-title" style="margin-top: 35px;" data-i18n="disp_options">Opciones de visualización:</h3>
+							<p class="label-mini" style="color: #666; margin-bottom: 10px;" data-i18n="design_mode">MODO DE DISEÑO</p>
+
+							<div class="config-option-row">
+								<label class="radio-container">
+									<input type="radio" name="diseno" value="normal" onclick="cambiarModoDiseno('normal')">
+									<span class="radio-mark"></span> <span data-i18n="mode_normal">Normal</span>
+								</label>
+							</div>
+							<div class="config-option-row">
+								<label class="radio-container">
+									<input type="radio" name="diseno" value="paginas" onclick="cambiarModoDiseno('paginas')">
+									<span class="radio-mark"></span> <span data-i18n="mode_pages">Dividir la canción en páginas</span>
+								</label>
+							</div>
+							<div class="config-option-row">
+								<label class="radio-container">
+									<input type="radio" name="diseno" value="ajustar" onclick="cambiarModoDiseno('ajustar')">
+									<span class="radio-mark"></span> <span data-i18n="mode_fit">Ajustar la canción a una sola página</span>
+								</label>
+							</div>
+
+							<div style="height: 150px; width: 100%; display: block;"></div>
+						</div> 
+
+						<div id="section-personalizacion" style="display: none;">
+							<div class="contenedor-monitor-fijo">
+								<div class="live-preview-box" id="live-preview-box">
+									<div class="song-viewer" style="padding-top: 0 !important;">
+										<div class="lyrics-container" style="padding-bottom: 10px !important;">
+											<pre id="live-preview-content" style="margin: 0; padding: 10px; width: 100%;" data-i18n="js_preview_loading">Cargando vista previa...</pre>
+										</div>
+									</div>
+								</div>
+							</div>
+
+							<h3 class="section-title" style="text-align: center; margin-bottom: 30px;" data-i18n="meta_title">METADATOS</h3>
+							
+							<div class="control-group-p">
+								<div class="est-header"><span><span data-i18n="font_lyrics">Letra: </span> <span id="val-letra" class="num-verde">15</span></span></div>
+								<input type="range" class="slider-verde" min="10" max="30" value="15" oninput="document.getElementById('val-letra').innerText = this.value; document.body.style.setProperty('--user-font-size', this.value + 'px')">
+								
+								<div class="tool-row-p">
+									<span class="label-lateral" data-i18n="color_label">Color</span> 
+									<div id="btn-letra-color" class="btn-color-rectangular" onclick="abrirPaletaColor('letra')">
+										<span id="txt-letra-color">DEFAULT</span>
+									</div>
+									<button class="btn-p" onclick="alternarEstilo(this, 'letra', 'B')">B</button>
+									<button class="btn-p" onclick="alternarEstilo(this, 'letra', 'I')">I</button>
+								</div>
+							</div>
+
+							<div class="control-group-p" style="margin-top:25px;">
+								<div class="est-header"><span><span data-i18n="font_chords">Acorde: </span> <span id="val-acorde" class="num-verde">15</span></span></div>
+								<input type="range" class="slider-verde" min="10" max="30" value="15" oninput="document.getElementById('val-acorde').innerText = this.value; document.body.style.setProperty('--user-chord-size', this.value + 'px')">
+								<div class="tool-row-p">
+									<span class="label-lateral" data-i18n="color_label">Color</span> 
+									<div id="btn-acorde-color" class="btn-color-rectangular" onclick="abrirPaletaColor('acorde')">
+										<span id="txt-acorde-color">DEFAULT</span>
+									</div>
+									<button class="btn-p" onclick="alternarEstilo(this, 'acorde', 'B')">B</button>
+									<button class="btn-p" onclick="alternarEstilo(this, 'acorde', 'I')">I</button>
+								</div>
+
+								<div class="flex-between" style="margin-top: 15px; display: flex; justify-content: space-between; align-items: center;">
+									<span style="font-family: var(--f-medium); font-size: 0.95rem; color: #fff;" data-i18n="hide_chords">Esconder Acordes</span> 
+									<label class="sw-v">
+										<input type="checkbox" id="switch-esconder-acordes" onclick="toggleEsconderAcordes()">
+										<span class="sw-slider"></span>
+									</label>
+								</div>
+								<div class="flex-between" style="margin-top: 15px; display: flex; justify-content: space-between; align-items: center;">
+									<span style="font-family: var(--f-medium); font-size: 0.95rem; color: #fff;" data-i18n="hide_lyrics">Esconder Letra</span> 
+									<label class="sw-v">
+										<input type="checkbox" id="switch-esconder-letra" onclick="toggleEsconderLetra()">
+										<span class="sw-slider"></span>
+									</label>
+								</div>
+							</div>
+
+							<div class="control-group-p" style="margin-top: 25px;">
+								<div class="est-header"><span><span data-i18n="line_spacing">Interlineado: </span> <span id="val-line" class="num-verde">1.6</span></span></div>
+								<input type="range" class="slider-verde" min="0.2" max="3.0" step="0.1" value="1.6" oninput="document.getElementById('val-line').innerText = this.value; document.body.style.setProperty('--user-line-height', this.value)">
+								
+								<div class="est-header" style="margin-top:20px;"><span><span data-i18n="letter_spacing">Espaciado: </span> <span id="val-space" class="num-verde">0.0</span>px</span></div>
+								<input type="range" class="slider-verde" min="-5" max="5" step="0.1" value="0.0" oninput="document.getElementById('val-space').innerText = this.value; document.body.style.setProperty('--user-letter-spacing', this.value + 'px')">
+							</div>
+
+							<div class="divisor-p"></div>
+							<h3 class="section-title" data-i18n="bis_function">Función BIS - x2 - x3</h3>
+							
+							<div class="flex-between" style="display: flex; justify-content: space-between; align-items: center;">
+								<span style="font-family: var(--f-medium); font-size: 0.95rem; color: #fff;" data-i18n="deploy_mult">Desplegar multiplicadores</span> 
+								<label class="sw-v">
+									<input type="checkbox" id="switch-multiplicadores" checked onclick="toggleMultiplicadores()">
+									<span class="sw-slider"></span>
+								</label>
+							</div>
+							<div class="divisor-p"></div>
+
+							<h3 class="section-title" data-i18n="structure_title">ESTRUCTURA</h3>
+
+							<div id="lista-estructura">
+								<p style="color:#888; font-size:0.8rem; text-align:center;" data-i18n="structure_empty">Selecciona una canción para ver su estructura.</p>
+							</div>
+
+							<div class="divisor-p"></div>
+
+							<div class="flex-between" style="margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center;">
+								<h3 class="section-title" style="margin:0;" data-i18n="headers_title">Encabezados</h3> 
+								<label class="sw-v">
+									<input type="checkbox" id="switch-encabezados-principal" checked onclick="toggleEncabezadosPrincipal()">
+									<span class="sw-slider"></span>
+								</label>
+							</div>
+
+							<div class="control-group-p">
+								<div class="est-header">
+									<span><span data-i18n="font_size">Tamaño de la Fuente: </span> <span id="val-font-h" class="num-verde">15</span></span>
+								</div>
+								<input type="range" class="slider-verde" min="10" max="60" value="30" oninput="cambiarTamanoEncabezado(this.value)">
+
+								<div class="row-p-selects" style="display: flex; gap: 15px; margin-top: 10px;">
+									<div class="col-p" style="flex: 1; display: flex; flex-direction: column; align-items: flex-start;">
+										<label class="label-p-header" style="font-size: 0.85rem; color: #fff; margin-bottom: 8px; font-family: var(--f-medium);" data-i18n="color_label">Color</label>
+										<div id="btn-header-color" class="btn-color-rectangular" onclick="abrirPaletaColor('estructura')">
+											<span id="txt-header-color">DEFAULT</span>
+										</div>
+									</div>
+
+									<div class="col-p" style="flex: 1; display: flex; flex-direction: column; align-items: flex-start;">
+										<label class="label-p-header" style="font-size: 0.85rem; color: #fff; margin-bottom: 8px; font-family: var(--f-medium);" data-i18n="highlight_color">Color de resaltado</label>
+										<div id="btn-resaltar-color" class="btn-color-rectangular" onclick="abrirPaletaColor('resaltar')">
+											<span id="txt-resaltar-color">DEFAULT</span>
+										</div>
+									</div>
+								</div>
+							</div>
+
+							<div class="divisor-p"></div>
+
+							<div class="flex-between" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
+								<h3 class="section-title" style="margin:0;" data-i18n="notes_label">Apuntes</h3>
+								<label class="sw-v">
+									<input type="checkbox" id="switch-mostrar-apuntes" onclick="toggleMostrarApuntes()">
+									<span class="sw-slider"></span>
+								</label>
+							</div>
+
+							<div class="control-group-p" style="display: flex; justify-content: center; margin-top: 15px;">
+								<div class="tool-row-p" style="display: flex; align-items: center; justify-content: center; gap: 15px;">
+									<div id="btn-notas-color" class="btn-color-rectangular" onclick="abrirPaletaColor('notas', 'btn-notas-color')">
+										<span id="txt-notas-color">DEFAULT</span>
+									</div>
+									<div style="display: flex; gap: 5px;">
+										<button id="btn-notes-bold" class="btn-p" onclick="alternarEstiloNotas('bold', this)">B</button>
+										<button id="btn-notes-italic" class="btn-p" onclick="alternarEstiloNotas('italic', this)">I</button>
+									</div>
+								</div>
+							</div>
+
+							<div class="divisor-p"></div>
+							
+							<div class="config-option-row flex-between" style="display: flex; justify-content: space-between; align-items: center; margin-top: 15px;">
+								<h3 class="section-title" style="margin: 0;" data-i18n="viewer_bg">Fondo del Visor</h3>
+								<div id="btn-fondo-color" class="btn-color-rectangular" onclick="abrirPaletaColor('fondo')">
+									<span id="txt-fondo-color">DEFAULT</span>
+								</div>
+							</div>
+
+							<div class="divisor-p"></div>
+
+							<div style="display: flex; justify-content: center; margin-top: 20px; padding-bottom: 30px;">
+								<button class="btn-color-rectangular" style="width: 100%; max-width: 320px; height: 45px; background: #222; border-color: #555; color: #fff;" onclick="confirmarRestaurarPredeterminados()">
+									<span style="font-size: 0.8rem; color: #ffb347; font-family: var(--f-bold);" data-i18n="btn_reset">RESTAURAR VALORES PREDETERMINADOS</span>
+								</button>
+							</div>
+
+							<div style="height: 100px; width: 100%;"></div>
+						</div>
+
+						<div id="section-diagramas" style="display: none; padding: 20px;">
+							<h3 class="section-title" style="margin-top: 30px;" data-i18n="cipher_type">Tipo de Cifrado:</h3>
+							<div class="control-group-p">
+								<div class="segment-control">
+									<div class="segment-item active" onclick="cambiarConfigMusical(this, 'estandar')" data-i18n="cipher_std">Estándar</div>
+									<div class="segment-item" onclick="cambiarConfigMusical(this, 'latino')" data-i18n="cipher_lat">Latino</div>
+								</div>
+							</div>
+
+							<div class="control-group-p" style="margin-top: 25px;">
+								<h3 class="section-title" data-i18n="instrument">Instrumento:</h3>
+								<div class="segment-control">
+									<div class="segment-item active" onclick="cambiarConfigMusical(this, 'guitarra')" data-i18n="inst_guitar">Guitarra</div>
+									<div class="segment-item" onclick="cambiarConfigMusical(this, 'bajo')" data-i18n="inst_bass">Bajo</div>
+									<div class="segment-item" onclick="cambiarConfigMusical(this, 'ukelele')" data-i18n="inst_uke">Ukelele</div>
+								</div>
+							</div>
+
+							<div class="control-group-p" style="margin-top: 25px;">
+								<h3 class="section-title" data-i18n="tuning">Afinación:</h3>
+								<div class="segment-grid">
+									<div class="segment-item active" onclick="cambiarConfigMusical(this, 'Standard')">Standard</div>
+									<div class="segment-item" onclick="cambiarConfigMusical(this, 'Drop D')">Drop D</div>
+									<div class="segment-item" onclick="cambiarConfigMusical(this, 'Open G')">Open G</div>
+									<div class="segment-item" onclick="cambiarConfigMusical(this, 'DADGAD')">DADGAD</div>
+									<div class="segment-item" onclick="cambiarConfigMusical(this, 'Open D')">Open D</div>
+									<div class="segment-item" onclick="cambiarConfigMusical(this, 'Open E')">Open E</div>
+								</div>
+							</div>
+							<div class="control-group-p" style="margin-top: 25px;">
+								<h3 class="section-title" data-i18n="notation">Notación de Acordes:</h3>
+								<div class="segment-control">
+									<div class="segment-item active" onclick="cambiarConfigMusical(this, 'sostenidos')" data-i18n="not_sharp">Sostenidos (#)</div>
+									<div class="segment-item" onclick="cambiarConfigMusical(this, 'bemoles')" data-i18n="not_flat">Bemoles (b)</div>
+									<div class="segment-item" onclick="cambiarConfigMusical(this, 'mixto')" data-i18n="not_mixed">Híbrido (#/b)</div>
+								</div>
+							</div>
+
+							<h3 class="section-title" style="margin-top: 35px;" data-i18n="diag_location">Ubicación del diagrama de acordes:</h3>
+							<div class="config-option-row"><label class="radio-container"><input type="radio" name="ubica" value="oculto" checked><span class="radio-mark"></span> <span data-i18n="diag_hidden">Oculto</span></label></div>
+							<div class="config-option-row"><label class="radio-container"><input type="radio" name="ubica" value="inicio"><span class="radio-mark"></span> <span data-i18n="diag_start">Inicio</span></label></div>
+							<div class="config-option-row"><label class="radio-container"><input type="radio" name="ubica" value="final"><span class="radio-mark"></span> <span data-i18n="diag_end">Final</span></label></div>
+							<div class="config-option-row"><label class="radio-container"><input type="radio" name="ubica" value="fijo"><span class="radio-mark"></span> <span data-i18n="diag_fixed">Fijo</span></label></div>
+
+							<h3 class="section-title" style="margin-top: 35px;" data-i18n="diag_size">Tamaño del diagrama de acordes:</h3>
+							<div class="config-option-row"><label class="radio-container"><input type="radio" name="tamano" value="peque"><span class="radio-mark"></span> <span data-i18n="size_small">Pequeño</span></label></div>
+							<div class="config-option-row"><label class="radio-container"><input type="radio" name="tamano" value="normal" checked><span class="radio-mark"></span> <span data-i18n="size_normal">Normal</span></label></div>
+							<div class="config-option-row"><label class="radio-container"><input type="radio" name="tamano" value="grande"><span class="radio-mark"></span> <span data-i18n="size_large">Grande</span></label></div>
+
+							<div class="flex-between" style="margin-top: 30px; display: flex; align-items: center; justify-content: space-between;">
+								<span style="font-family: var(--f-medium); font-size: 0.95rem;" data-i18n="left_handed">Gráficos de acordes para zurdos</span>
+								<label class="sw-v">
+									<input type="checkbox" id="switch-zurdos" onclick="toggleZurdos()">
+									<span class="sw-slider"></span>
+								</label>
+							</div>
+							<div style="height: 100px; width: 100%;"></div>
+						</div>
+						
+						<div id="section-pedal" style="display: none; padding: 20px; padding-bottom: 100px;">
+			
+							<style>
+								.dev-title { color: var(--accent-color); font-family: var(--f-bold); font-size: 1.1rem; margin: 0; letter-spacing: 1px; }
+								.dev-select { background: #111; border: 1px solid #333; border-radius: 6px; padding: 8px 12px; color: #ccc; font-family: var(--f-medium); font-size: 0.85rem; cursor: pointer; min-width: 180px; text-align: center; display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+								.dev-btn { background: #111; border: 1px solid #333; border-radius: 6px; color: #999; padding: 12px 5px; font-family: var(--f-bold); font-size: 0.75rem; cursor: pointer; text-align: center; }
+							</style>
+
+							<h2 class="dev-title" style="margin-bottom: 25px;" data-i18n="pedal_title">STOMP BOX (BOMBO)</h2>
+
+							<div style="margin-bottom: 20px;">
+								<span style="color: #aaa; font-family: var(--f-medium); font-size: 0.9rem; display: block; margin-bottom: 8px;" data-i18n="input_device">Dispositivo de entrada:</span>
+								<div style="position: relative;">
+									<div class="dev-select" onclick="toggleDeviceMenu(event, 'pedal')" style="width: 100%; justify-content: space-between;">
+										<span id="pedal-active-name">Sin dispositivo</span>
+										<span class="material-icons" style="font-size: 1.1rem; color: #666;">expand_more</span>
+									</div>
+									<div id="menu-pedal" class="options-menu" style="top: 100%; left: 0; width: 100%; margin-top: 5px;">
+										<div class="menu-item" style="color: var(--accent-color); justify-content: center; font-weight: bold;" onclick="buscarDispositivos('pedal')">Buscar Dispositivo</div>
+									</div>
+								</div>
+							</div>
+
+							<div style="margin-bottom: 25px;">
+								<span style="color: #aaa; font-family: var(--f-medium); font-size: 0.9rem; display: block; margin-bottom: 8px;" data-i18n="lbl_action">Acción del pedal:</span>
+								<button class="dev-btn" onclick="escucharEntrada(this, 'pedal')" style="width: 100%; padding: 14px 5px; font-size: 0.85rem;" data-i18n="assign_shortcut">Asigne el Atajo</button>
+							</div>
+
+							<div class="divisor-p"></div>
+
+							<div style="margin-top: 10px;">
+								<span style="color: #aaa; font-family: var(--f-medium); font-size: 0.9rem; display: block; margin-bottom: 8px;" data-i18n="exec_sound">Sonido de ejecución:</span>
+								<div style="position: relative;">
+									<div class="dev-select" onclick="toggleDeviceMenu(event, 'sonido-bombo')" style="width: 100%; justify-content: space-between;">
+										<span id="sonido-bombo-active-name">Bombo 1 (Acústico)</span>
+										<span class="material-icons" style="font-size: 1.1rem; color: #666;">music_note</span>
+									</div>
+									<div id="menu-sonido-bombo" class="options-menu" style="top: 100%; left: 0; width: 100%; margin-top: 5px;">
+										<div class="menu-item" onclick="seleccionarSonidoPedal('Bombo 1 (Acústico)')">Bombo 1 (Acústico)</div>
+										<div class="menu-item" onclick="seleccionarSonidoPedal('Bombo 2 (Punch)')">Bombo 2 (Punch)</div>
+										<div class="menu-item" onclick="seleccionarSonidoPedal('Cajón Peruano')">Cajón Peruano</div>
+										<div class="menu-item" onclick="seleccionarSonidoPedal('Pandereta')">Pandereta</div>
+										<div class="menu-item" onclick="seleccionarSonidoPedal('Caja (Snare)')">Caja (Snare)</div>
+										<div class="menu-item" onclick="seleccionarSonidoPedal('Hi-Hat Cerrado')">Hi-Hat Cerrado</div>
+										<div class="menu-item" style="color: var(--accent-color); border-top: 1px solid #333; font-weight: bold;" onclick="document.getElementById('input-nuevo-pad').click()">
+											<span class="material-icons" style="font-size: 1.2rem; margin-right: 8px;">add_circle</span> <span data-i18n="add_custom_sound">AÑADIR PROPIO</span>
+										</div>
+										<div class="menu-item" style="color: var(--accent-color); font-weight: bold;" onclick="abrirDriveParaAudio('pedal')">
+											<span class="material-icons" style="font-size: 1.2rem; margin-right: 8px;">add_to_drive</span> IMPORTAR DE DRIVE
+										</div>
+									</div>
+
+									<input type="file" id="input-pedal-custom" accept="audio/*, audio/mpeg, .mp3, .wav, .m4a" style="display: none;" onchange="cargarSonidoPropioPedal(event)">
+								</div>
+							</div>
+						</div>
+						<div id="section-pads" style="display: none; padding: 10px; padding-bottom: 100px;">
+							<h3 class="section-title" style="margin-bottom: 25px; margin-top: 10px;" data-i18n="pads_title">Pads Atmosféricos</h3>
+
+							<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+								<div style="display: flex; align-items: center; gap: 10px;">
+									<span style="color: #999; font-family: var(--f-medium); font-size: 0.9rem;" data-i18n="activate_pads">Activar Pads:</span>
+									<div style="position: relative;">
+										<div class="dev-select" onclick="toggleDeviceMenu(event, 'pads-personalizado')" style="width: 180px; justify-content: space-between;">
+											<span id="texto-pad-seleccionado" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 140px;">Worship Suave</span>
+											<span class="material-icons" style="font-size: 1.1rem; color: #888;">expand_more</span>
+										</div>
+
+										<div id="menu-pads-personalizado" class="options-menu" style="top: 100%; right: 0; min-width: 200px; margin-top: 5px;">
+											<div class="menu-item" onclick="seleccionarPadDesdeModal(this, 'pad-1.mp3', 'Worship Suave')">
+												<span class="material-icons" style="font-size: 1.2rem; margin-right: 8px;">audiotrack</span> Worship Suave
+											</div>
+											<div class="menu-item" onclick="seleccionarPadDesdeModal(this, 'pad-2.mp3', 'Atmosférico Profundo')">
+												<span class="material-icons" style="font-size: 1.2rem; margin-right: 8px;">audiotrack</span> Atmosférico Profundo
+											</div>
+											<div class="menu-item" onclick="seleccionarPadDesdeModal(this, 'pad-3.mp3', 'Sintetizador Épico')">
+												<span class="material-icons" style="font-size: 1.2rem; margin-right: 8px;">audiotrack</span> Sintetizador Épico
+											</div>
+											<div class="menu-item" style="color: var(--accent-color); border-top: 1px solid #333; font-weight: bold;" onclick="document.getElementById('input-nuevo-pad').click()">
+												<span class="material-icons" style="font-size: 1.2rem; margin-right: 8px;">add_circle</span> <span data-i18n="add_custom_sound">AÑADIR PROPIO</span>
+											</div>
+											<div onclick="abrirDriveParaAudio('pad')" style="border: 1px dashed var(--accent-color); color: var(--accent-color); padding: 12px; text-align: center; ...">
+												<span class="material-icons">add_to_drive</span> IMPORTAR DE DRIVE
+											</div>
+									</div>
+								</div>
+								</div>
+								<label class="switch-elegante" style="transform: scale(0.85); transform-origin: right;">
+									<input type="checkbox" id="adv-pads" onclick="toggleAvanzado('pads')"><span class="slider-round"></span>
+								</label>
+							</div>
+
+							<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+								<span style="color: #999; font-family: var(--f-medium); font-size: 0.9rem;" data-i18n="pads_minor">Menores</span>
+								<label class="switch-elegante" style="transform: scale(0.85); transform-origin: right;">
+									<input type="checkbox" id="adv-pads-menores" onclick="togglePadsMenores()"><span class="slider-round"></span>
+								</label>
+							</div>
+							<style>
+								.pad-btn { position: relative; display: flex; align-items: center; justify-content: center; }
+								.pad-main-text { font-size: 1.1rem; }
+								.pad-corner-text { position: absolute; top: 4px; right: 6px; font-size: 0.65rem; color: #777; font-family: var(--f-medium); transition: color 0.2s; }
+								.pad-btn.activo-pad .pad-corner-text { color: rgba(255,255,255,0.7) !important; }
+								body.tema-claro .pad-btn:not(.activo-pad) .pad-corner-text { color: #aaa; }
+							</style>
+
+							<div id="grid-pads-sintetizador" class="pad-grid" style="display: grid; opacity: 0.3; pointer-events: none; filter: grayscale(1);">
+								<div id="pad-btn-A" class="pad-btn" onclick="togglePad('A', this)">
+									<span class="pad-main-text">A</span><span class="pad-corner-text">F#m</span>
+								</div>
+								<div id="pad-btn-As" class="pad-btn" onclick="togglePad('A#', this)">
+									<span class="pad-main-text">A#</span><span class="pad-corner-text">Gm</span>
+								</div>
+								<div id="pad-btn-B" class="pad-btn" onclick="togglePad('B', this)">
+									<span class="pad-main-text">B</span><span class="pad-corner-text">G#m</span>
+								</div>
+								<div id="pad-btn-C" class="pad-btn" onclick="togglePad('C', this)">
+									<span class="pad-main-text">C</span><span class="pad-corner-text">Am</span>
+								</div>
+								<div id="pad-btn-Cs" class="pad-btn" onclick="togglePad('C#', this)">
+									<span class="pad-main-text">C#</span><span class="pad-corner-text">A#m</span>
+								</div>
+								<div id="pad-btn-D" class="pad-btn" onclick="togglePad('D', this)">
+									<span class="pad-main-text">D</span><span class="pad-corner-text">Bm</span>
+								</div>
+								<div id="pad-btn-Ds" class="pad-btn" onclick="togglePad('D#', this)">
+									<span class="pad-main-text">D#</span><span class="pad-corner-text">Cm</span>
+								</div>
+								<div id="pad-btn-E" class="pad-btn" onclick="togglePad('E', this)">
+									<span class="pad-main-text">E</span><span class="pad-corner-text">C#m</span>
+								</div>
+								<div id="pad-btn-F" class="pad-btn" onclick="togglePad('F', this)">
+									<span class="pad-main-text">F</span><span class="pad-corner-text">Dm</span>
+								</div>
+								<div id="pad-btn-Fs" class="pad-btn" onclick="togglePad('F#', this)">
+									<span class="pad-main-text">F#</span><span class="pad-corner-text">D#m</span>
+								</div>
+								<div id="pad-btn-G" class="pad-btn" onclick="togglePad('G', this)">
+									<span class="pad-main-text">G</span><span class="pad-corner-text">Em</span>
+								</div>
+								<div id="pad-btn-Gs" class="pad-btn" onclick="togglePad('G#', this)">
+									<span class="pad-main-text">G#</span><span class="pad-corner-text">Fm</span>
+								</div>
+							</div>
+
+							<div class="divisor-p" style="margin-top: 25px; margin-bottom: 20px;"></div>
+
+							<h3 style="color: var(--accent-color); font-size: 0.9rem; margin-bottom: 15px; font-family: var(--f-bold); display: flex; align-items: center; gap: 8px;" data-i18n="pads_config">
+								<span class="material-icons" style="font-size: 18px;">settings</span> CONFIGURACIÓN ATMÓSFERA
+							</h3>
+
+							<div style="margin-bottom: 20px;">
+								<div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+									<span style="color: #888; font-size: 0.8rem;" data-i18n="pads_vol">Volumen Maestro</span>
+									<span id="val-pad-vol" style="color: var(--accent-color); font-size: 0.8rem;">80%</span>
+								</div>
+								<input type="range" id="pad-master-vol" min="0" max="100" value="80" class="custom-slider" oninput="actualizarAjustesPad()">
+							</div>
+
+							<div style="margin-bottom: 25px;">
+								<div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+									<span style="color: #888; font-size: 0.8rem;" data-i18n="pads_cross">Transición (Crossfade)</span>
+									<span id="val-pad-cross" style="color: var(--accent-color); font-size: 0.8rem;">8.4s</span>
+								</div>
+								<input type="range" id="pad-crossfade" min="0" max="100" value="84" class="custom-slider" oninput="actualizarAjustesPad()">
+							</div>
+
+							<div style="margin-top: 15px;">
+								<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+									<span style="color: #ccc; font-size: 0.85rem; font-family: var(--f-medium);" data-i18n="pads_eq">Ecualización Activa</span>
+									<label class="switch-elegante" style="transform: scale(0.85); transform-origin: right;">
+										<input type="checkbox" id="pad-eq-switch" onchange="actualizarAjustesPad()">
+										<span class="slider-round"></span>
+									</label>
+								</div>
+
+								<div style="margin-bottom: 15px;">
+									<div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+										<span style="color: #666; font-size: 0.75rem;" data-i18n="pads_hp">Highpass (Corte Graves)</span>
+										<span id="val-pad-hp" style="color: #aaa; font-size: 0.75rem;">48 Hz</span>
+									</div>
+									<input type="range" id="pad-hp-freq" min="20" max="500" value="48" class="custom-slider small" oninput="actualizarAjustesPad()">
+								</div>
+
+								<div>
+									<div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+										<span style="color: #666; font-size: 0.75rem;" data-i18n="pads_lp">Lowpass (Corte Agudos)</span>
+										<span id="val-pad-lp" style="color: #aaa; font-size: 0.75rem;">182 Hz</span>
+									</div>
+									<input type="range" id="pad-lp-freq" min="100" max="5000" value="182" class="custom-slider small" oninput="actualizarAjustesPad()">
+								</div>
+							</div>
+						</div> 
+						
+						<div id="section-avanzado" style="display: none; padding: 20px; padding-bottom: 100px;">
+							<h3 style="text-align: center; color: #eee; font-family: var(--f-bold); font-size: 1.05rem; margin-bottom: 25px; margin-top: 10px;" data-i18n="adv_float_title">Botones Flotantes</h3>
+
+							<div style="margin-bottom: 20px;">
+								<span style="color: #aaa; font-family: var(--f-medium); font-size: 0.9rem; display: block; margin-bottom: 8px;" data-i18n="adv_float_style">Estilo de Velocidad:</span>
+								<div style="position: relative;">
+									<div class="dev-select" onclick="toggleEstiloMenu(event)" style="width: 100%; justify-content: space-between; cursor: pointer;">
+										<span id="estilo-active-name">Botones (- / +)</span>
+										<span class="material-icons" style="font-size: 1.1rem; color: #666;">expand_more</span>
+									</div>
+									
+									<div id="menu-estilo" class="options-menu" style="display: none; position: absolute; top: 100%; left: 0; width: 100%; margin-top: 5px; z-index: 2000;">
+										<div class="menu-item" onclick="seleccionarEstilo('botones')">Botones (- / +)</div>
+										<div class="menu-item" onclick="seleccionarEstilo('barra')">Barra deslizante</div>
+									</div>
+								</div>
+							</div>
+							<div class="divisor-p" style="margin: 30px 0 25px 0;"></div>
+
+							<h3 style="text-align: center; color: #eee; font-family: var(--f-bold); font-size: 1.05rem; margin-bottom: 25px; margin-top: 10px;" data-i18n="adv_voice_guide_title">Voz Guía de Encabezados</h3>
+
+							<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+								<span style="color: #999; font-family: var(--f-medium); font-size: 0.9rem;" data-i18n="adv_voice_guide_desc">Anunciar secciones (Intro, Coro, etc.)</span>
+								<label class="switch-elegante" style="transform: scale(0.85); transform-origin: right;">
+									<input type="checkbox" id="adv-voice-guide" onclick="toggleAvanzado('voice-guide', this.checked)">
+									<span class="slider-round"></span>
+								</label>
+							</div>
+
+							<h3 style="text-align: center; color: #eee; font-family: var(--f-bold); font-size: 1.05rem; margin-bottom: 25px; margin-top: 10px;" data-i18n="adv_player_title">Reproductor Multimedia</h3>
+							
+							<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+								<span style="color: #999; font-family: var(--f-medium); font-size: 0.9rem;" data-i18n="adv_player_btn">Botones de Reproductor flotante:</span>
+								<label class="switch-elegante" style="transform: scale(0.85); transform-origin: right;">
+									<input type="checkbox" id="adv-btn-multi" onclick="toggleAvanzado('btn-multi')"><span class="slider-round"></span>
+								</label>
+							</div>
+							
+							<h4 style="color: #aaa; margin: 25px 0 10px 0; font-family: var(--f-bold); font-size: 1rem; text-transform: none;" data-i18n="adv_audio_title">Reproducir Audio</h4>
+							
+							<div id="contenedor-urls-audio" class="grupo-urls" style="display: flex; flex-direction: column; gap: 8px; margin-bottom: 10px;">
+								<!-- ...Tus audios se generan aquí... -->
+							</div>
+							<div class="dev-add" onclick="agregarAudioInput()" style="margin-top: 0; margin-bottom: 25px; display: inline-block;" data-i18n="adv_add_track">+ Añadir Pista</div>
+							<span class="material-icons" style="color: var(--accent-color); font-size: 1.2rem; cursor: pointer; margin-right: 10px;" onclick="abrirDriveParaAudio('pista', ${num})">add_to_drive</span>
+
+							<div class="divisor-p" style="margin: 30px 0 25px 0;"></div>
+
+							<h3 style="text-align: center; color: #eee; font-family: var(--f-bold); font-size: 1.05rem; margin-bottom: 25px;" data-i18n="adv_invert_title">Invertir colores a visualizadores</h3>
+
+							<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+								<span style="color: #999; font-family: var(--f-medium); font-size: 0.9rem;" data-i18n="adv_inv_pdf">Invertir Colores - PDF</span>
+								<label class="switch-elegante" style="transform: scale(0.85); transform-origin: right;">
+									<input type="checkbox" id="adv-inv-pdf" onclick="toggleAvanzado('inv-pdf')"><span class="slider-round"></span>
+								</label>
+							</div>
+							<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+								<span style="color: #999; font-family: var(--f-medium); font-size: 0.9rem;" data-i18n="adv_inv_img">Invertir Colores - Imagen</span>
+								<label class="switch-elegante" style="transform: scale(0.85); transform-origin: right;">
+									<input type="checkbox" id="adv-inv-img" onclick="toggleAvanzado('inv-img')"><span class="slider-round"></span>
+								</label>
+							</div>
+							
+							<div class="divisor-p" style="margin: 30px 0 25px 0;"></div>
+
+							<h3 style="text-align: center; color: #eee; font-family: var(--f-bold); font-size: 1.05rem; margin-bottom: 25px;" data-i18n="adv_info_title">Información de contenido</h3>
+
+							<div style="display: flex; flex-direction: column; gap: 12px; padding: 0 5px;">
+								<div style="display: flex; justify-content: space-between; align-items: center;">
+									<span style="color: #888; font-size: 0.85rem;" data-i18n="info_total_songs">Total de Canciones:</span>
+									<span id="info-canciones" style="color: #ccc; font-family: var(--f-medium); font-size: 0.85rem;">0</span>
+								</div>
+								<div style="display: flex; justify-content: space-between; align-items: center;">
+									<span style="color: #888; font-size: 0.85rem;" data-i18n="info_pdf_vis">Total de PDF Visuales:</span>
+									<span id="info-pdf-vis" style="color: #ccc; font-family: var(--f-medium); font-size: 0.85rem;">0</span>
+								</div>
+								<div style="display: flex; justify-content: space-between; align-items: center;">
+									<span style="color: #888; font-size: 0.85rem;" data-i18n="info_img_vis">Total de Imagen Visuales:</span>
+									<span id="info-img-vis" style="color: #ccc; font-family: var(--f-medium); font-size: 0.85rem;">0</span>
+								</div>
+								<div style="display: flex; justify-content: space-between; align-items: center;">
+									<span style="color: #888; font-size: 0.85rem;" data-i18n="info_pdf_imp">Total de PDF Importado:</span>
+									<span id="info-pdf-imp" style="color: #ccc; font-family: var(--f-medium); font-size: 0.85rem;">0</span>
+								</div>
+								<div style="display: flex; justify-content: space-between; align-items: center;">
+									<span style="color: #888; font-size: 0.85rem;" data-i18n="info_word_imp">Total de WORD Importado:</span>
+									<span id="info-word-imp" style="color: #ccc; font-family: var(--f-medium); font-size: 0.85rem;">0</span>
+								</div>
+								<div style="display: flex; justify-content: space-between; align-items: center;">
+									<span style="color: #888; font-size: 0.85rem;" data-i18n="info_db">Base de Datos:</span>
+									<span id="info-bd" style="color: #ccc; font-family: var(--f-medium); font-size: 0.85rem;">0 KB</span>
+								</div>
+								<div style="display: flex; justify-content: space-between; align-items: center;">
+									<span style="color: #888; font-size: 0.85rem;" data-i18n="info_audio">Archivos Audio:</span>
+									<span id="info-audio" style="color: #ccc; font-family: var(--f-medium); font-size: 0.85rem;">0</span>
+								</div>
+							</div>
+						</div>
+
+						<div id="section-copia" style="display: none; padding: 20px;">
+							<h3 class="section-title" style="margin-bottom: 25px; text-transform: none;" data-i18n="backup_title">Copia de Seguridad</h3>
+							
+							<div style="display: flex; flex-direction: column; gap: 12px; align-items: flex-start;">
+								<button class="btn-gris-grande" onclick="crearCopiaSeguridad()" data-i18n="backup_create">Crear Copia de Seguridad de la Biblioteca</button>
+								<button class="btn-gris-grande" style="width: auto; padding: 10px 25px;" onclick="document.getElementById('input-restaurar-backup').click()" data-i18n="backup_restore">Restaurar Biblioteca</button>
+								
+								<input type="file" id="input-restaurar-backup" accept=".pbk" style="display:none" onchange="restaurarCopiaSeguridad(event)">
+							</div>
+
+							<div class="flex-between" style="margin-top: 35px; margin-bottom: 25px; align-items: center; display: flex; justify-content: space-between;">
+								<div class="icon-text-gap" style="display: flex; align-items: center; gap: 10px;">
+									<h3 class="section-title" style="margin:0; font-size: 1rem; text-transform: none;" data-i18n="backup_auto">Copia de seguridad automática</h3>
+								</div>
+								<label class="sw-v">
+									<input type="checkbox" id="switch-auto-backup" onchange="toggleAutoBackup(this.checked)">
+									<span class="sw-slider"></span>
+								</label>
+							</div>
+						</div>
+
+						<div id="section-acerca" style="display: none; padding: 20px; text-align: center; padding-bottom: 100px;">
+							<div style="margin-bottom: 30px; margin-top: 20px;">
+								<span class="material-icons" style="font-size: 4.5rem; color: var(--accent-color);">auto_stories</span>
+								<h2 style="color: #fff; font-family: var(--f-bold); font-size: 2rem; margin: 10px 0 5px 0;">PraiseBook</h2>
+								<span style="color: #888; font-family: var(--f-medium); font-size: 0.9rem;">Versión 1.0.0</span>
+							</div>
+
+							<p style="color: #ccc; font-family: var(--f-medium); font-size: 0.95rem; line-height: 1.6; margin-bottom: 30px; padding: 0 10px;" data-i18n="about_desc">
+								Creado con el propósito de equipar a músicos, líderes de alabanza y ministerios para servir con excelencia. PraiseBook es tu herramienta integral para organizar, transponer y dirigir la adoración sin distracciones.
+							</p>
+
+							<div style="background: #111; border: 1px solid #333; border-radius: 12px; padding: 25px 20px; margin-bottom: 40px; box-shadow: 0 4px 15px rgba(0,0,0,0.2);">
+								<p style="color: var(--accent-color); font-family: var(--f-bold); font-size: 1.15rem; font-style: italic; margin-bottom: 15px; line-height: 1.4;" data-i18n="about_quote">
+									"Cántenle una canción nueva;<br>toquen con destreza<br>y den voces de alegría.."
+								</p>
+								<span style="color: #666; font-size: 0.85rem; font-family: var(--f-medium); letter-spacing: 1px;">SALMOS 33:3</span>
+							</div>
+
+							<div style="color: #555; font-size: 0.8rem; font-family: var(--f-medium); line-height: 1.5;">
+								<p data-i18n="about_credits">Diseñado y desarrollado con dedicación.</p>
+								<p>© 2026 PraiseBook</p>
+							</div>
+						</div>
+						<div id="section-comprar" style="display: none; padding: 20px; text-align: center; padding-bottom: 100px;">
+							
+							<div style="margin-bottom: 30px; margin-top: 15px;">
+								<div style="width: 70px; height: 70px; background: color-mix(in srgb, var(--accent-color) 15%, transparent); border-radius: 20px; display: flex; justify-content: center; align-items: center; margin: 0 auto 20px; border: 1px solid color-mix(in srgb, var(--accent-color) 30%, transparent); transform: rotate(-5deg);">
+									<span class="material-icons" style="font-size: 2.8rem; color: var(--accent-color);">auto_awesome</span>
+								</div>
+								<h2 style="color: #fff; font-family: var(--f-bold); font-size: 1.8rem; margin: 0; letter-spacing: -0.5px;">PraiseBook <span style="color: var(--accent-color);">PRO</span></h2>
+								<p style="color: var(--accent-color); font-family: var(--f-bold); font-size: 0.75rem; margin-top: 5px; letter-spacing: 2px;" data-i18n="pro_subtitle">EXPERIENCIA SIN LÍMITES</p>
+							</div>
+
+							<p style="color: #999; font-family: var(--f-medium); font-size: 0.95rem; line-height: 1.6; margin-bottom: 30px; padding: 0 10px;" data-i18n="pro_desc">
+								Estás en la versión de cortesía. Desbloquea <b>todo el poder</b> de la herramienta definitiva para directores de alabanza y sirve con excelencia técnica en cada reunión.
+							</p>
+
+							<div style="background: #0d0d0d; border: 1px solid #1a1a1a; border-radius: 24px; padding: 25px; margin-bottom: 40px; text-align: left; border-top: 2px solid color-mix(in srgb, var(--accent-color) 40%, transparent);">
+								<ul style="list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 15px;">
+									<li style="display: flex; align-items: center; gap: 12px; color: #eee; font-family: var(--f-medium); font-size: 0.9rem;">
+										<span class="material-icons" style="color: var(--accent-color); font-size: 1.3rem;">verified</span> <span data-i18n="pro_f1">Almacenamiento ilimitado en la nube</span>
+									</li>
+									<li style="display: flex; align-items: center; gap: 12px; color: #eee; font-family: var(--f-medium); font-size: 0.9rem;">
+										<span class="material-icons" style="color: var(--accent-color); font-size: 1.3rem;">verified</span> <span data-i18n="pro_f2">Importación inteligente de PDF y Word</span>
+									</li>
+									<li style="display: flex; align-items: center; gap: 12px; color: #eee; font-family: var(--f-medium); font-size: 0.9rem;">
+										<span class="material-icons" style="color: var(--accent-color); font-size: 1.3rem;">verified</span> <span data-i18n="pro_f3">Sincronización PC-Móvil en tiempo real</span>
+									</li>
+									<li style="display: flex; align-items: center; gap: 12px; color: #eee; font-family: var(--f-medium); font-size: 0.9rem;">
+										<span class="material-icons" style="color: var(--accent-color); font-size: 1.3rem;">verified</span> <span data-i18n="pro_f4">Acceso a Pads Atmosféricos exclusivos</span>
+									</li>
+								</ul>
+							</div>
+
+							<button onclick="abrirModalDinamico('INFO', false, () => {}); document.getElementById('md-mensaje').innerText = 'Esta función te redirigirá a la Play Store próximamente.\n\n¡Gracias por tu apoyo!';" 
+									style="width: 100%; background: var(--accent-color); color: #000; font-family: var(--f-bold); font-size: 1rem; padding: 18px; border: none; border-radius: 18px; cursor: pointer; display: flex; justify-content: center; align-items: center; gap: 10px; box-shadow: 0 10px 25px color-mix(in srgb, var(--accent-color) 30%, transparent); transition: transform 0.2s;">
+								<span class="material-icons" style="font-weight: bold;">shopping_bag</span>
+								<span data-i18n="pro_btn">OBTENER VERSIÓN PRO</span>
+							</button>
+							
+							<p style="color: #444; font-size: 0.75rem; font-family: var(--f-medium); margin-top: 20px;" data-i18n="pro_footer">Pago único. Licencia vitalicia vinculada a tu cuenta.</p>
+						</div>
+						
+					</main>
+				</div> 
+			</div> 
+		</div> 
+		<div id="modal-dinamico" class="modal-overlay" onclick="cerrarModalDinamico()" style="z-index: 999999;">
+			<div class="modal-content" style="border: 2px solid var(--accent-color); padding: 25px; background: #1a1a1a; width: 90%; max-width: 350px; border-radius: 15px;" onclick="event.stopPropagation()">
+				<h3 id="md-titulo" style="margin-top: 0; color: var(--accent-color); font-family: var(--f-bold); font-size: 1.2rem; text-align: center;">TÍTULO</h3>
+				
+				<div id="md-input-container" style="margin: 20px 0;">
+					<input type="text" id="md-input" placeholder="Escribe aquí..." data-i18n="ph_type_here" ...>
+						   style="width: 100%; background: #222; border: 1px solid #444; color: #fff; padding: 15px; border-radius: 8px; outline: none; font-size: 1rem;">
+				</div>
+
+				<p id="md-mensaje" style="color: #ccc; display: none; margin-bottom: 20px; text-align: center;"></p>
+
+				<div class="modal-footer" style="display: flex; gap: 10px;">
+					<button class="btn-secondary" onclick="cerrarModalDinamico()" style="flex: 1; padding: 12px; border-radius: 8px; background: #333; color: #eee; border: none; cursor: pointer; font-family: var(--f-medium);" data-i18n="btn_cancel">CANCELAR</button>
+					<button id="md-btn-confirmar" style="flex: 1; padding: 12px; border-radius: 8px; background: var(--accent-color); color: #000; border: none; font-family: var(--f-bold); cursor: pointer;" data-i18n="btn_accept">ACEPTAR</button>
+				</div>
+			</div>
+		</div>
+		<div id="modal-acciones" class="modal-overlay" style="z-index: 10500;" onclick="this.style.display='none';">
+			<div class="modal-content" style="padding: 0; background: #1a1a1a; border: 1px solid #333; overflow: hidden; display: flex; flex-direction: column; max-height: 70vh;" onclick="event.stopPropagation()">
+				<div style="padding: 15px; border-bottom: 1px solid #333; display: flex; justify-content: space-between; align-items: center;">
+					<h3 style="margin: 0; color: var(--accent-color); font-family: var(--f-bold); font-size: 1.1rem;" data-i18n="sel_function">Seleccionar Función</h3>
+					<span class="material-icons" onclick="document.getElementById('modal-acciones').style.display='none'" style="color:#888; cursor:pointer;">close</span>
+				</div>
+				<div id="lista-acciones-container" style="overflow-y: auto; padding: 10px 0;">
+					</div>
+			</div>
+		</div>
+
+		<div id="modal-pads-personalizado" class="modal-overlay" style="z-index: 10600; display: none;" onclick="this.style.display='none';">
+			<div class="modal-content" style="padding: 0; background: #1a1a1a; border: 1px solid #333; border-radius: 12px; overflow: hidden; display: flex; flex-direction: column; max-height: 70vh; width: 90%; max-width: 400px; box-shadow: 0 10px 30px rgba(0,0,0,0.8);" onclick="event.stopPropagation()">
+				
+				<div style="padding: 15px; border-bottom: 1px solid #333; display: flex; justify-content: space-between; align-items: center; background: #111;">
+					<h3 style="margin: 0; color: #fff; font-family: var(--f-bold); font-size: 1.1rem; display: flex; align-items: center; gap: 8px;">
+						<span class="material-icons" style="color: var(--accent-color);">speaker</span> <span data-i18n="sel_pad">Seleccionar Pad</span>
+					</h3>
+					<span class="material-icons" style="color: #666; cursor: pointer; padding: 5px; background: #222; border-radius: 50%;" onclick="document.getElementById('modal-pads-personalizado').style.display='none'">close</span>
+				</div>
+				
+				<div id="lista-pads-modal" style="padding: 15px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px;">
+		
+					<div class="item-pad-lista" onclick="seleccionarPadDesdeModal(this, 'pad-1.mp3', 'Worship Suave')" style="padding: 12px 15px; background: rgba(76, 175, 80, 0.1); border: 1px solid var(--accent-color); border-radius: 8px; display: flex; align-items: center; gap: 12px; cursor: pointer;">
+						<span class="material-icons" style="color: var(--accent-color);">audiotrack</span>
+						<span style="color: #fff; font-size: 0.95rem; font-family: var(--f-medium); flex: 1;">Worship Suave</span>
+					</div>
+
+					<div class="item-pad-lista" onclick="seleccionarPadDesdeModal(this, 'pad-2.mp3', 'Atmosférico Profundo')" style="padding: 12px 15px; background: #222; border: 1px solid transparent; border-radius: 8px; display: flex; align-items: center; gap: 12px; cursor: pointer;">
+						<span class="material-icons" style="color: #666;">audiotrack</span>
+						<span style="color: #ccc; font-size: 0.95rem; font-family: var(--f-medium); flex: 1;">Atmosférico Profundo</span>
+					</div>
+
+					<div class="item-pad-lista" onclick="seleccionarPadDesdeModal(this, 'pad-3.mp3', 'Sintetizador Épico')" style="padding: 12px 15px; background: #222; border: 1px solid transparent; border-radius: 8px; display: flex; align-items: center; gap: 12px; cursor: pointer;">
+						<span class="material-icons" style="color: #666;">audiotrack</span>
+						<span style="color: #ccc; font-size: 0.95rem; font-family: var(--f-medium); flex: 1;">Sintetizador Épico</span>
+					</div>
+
+				</div>
+
+				<div style="padding: 15px; border-top: 1px solid #333; background: #111;">
+					<div onclick="document.getElementById('input-nuevo-pad').click()" style="border: 1px dashed var(--accent-color); color: var(--accent-color); padding: 12px; text-align: center; border-radius: 8px; cursor: pointer; font-family: var(--f-bold); display: flex; justify-content: center; align-items: center; gap: 8px; transition: background 0.2s;">
+						<span class="material-icons">add_circle_outline</span> <span data-i18n="add_phone_audio">AÑADIR AUDIO DEL TELÉFONO</span>
+					</div>
+					<input type="file" id="input-nuevo-pad" accept="audio/*, audio/mpeg, .mp3, .wav, .m4a" style="display: none;" onchange="agregarNuevoPadLocalDesdeModal(this)">
+				</div>
+
+			</div>
+		</div>
+		<div id="modal-pads-rayo" class="modal-overlay" onclick="this.classList.remove('active')">
+			<div class="transpose-modal" onclick="event.stopPropagation()" style="width: 90%; max-width: 380px; padding: 20px;">
+				<h3 style="color: var(--accent-color); font-family: var(--f-bold); font-size: 1rem; margin-bottom: 20px; text-align: center;" data-i18n="sel_pad">SELECCIONAR PAD</h3>
+				
+				<div class="fila-ajuste" style="margin-bottom: 20px; padding: 0 10px;">
+					<span class="etiqueta" data-i18n="mode_minor">Modo Menores</span>
+					<label class="switch-elegante">
+						<input type="checkbox" id="rayo-pads-menores" onchange="sincronizarMenoresRayo(this.checked)">
+						<span class="slider-round"></span>
+					</label>
+				</div>
+
+				<div id="grid-pads-rayo" class="pad-grid" style="grid-template-columns: repeat(3, 1fr); gap: 10px; opacity: 1; pointer-events: auto; filter: none;">
+					</div>
+
+				<div class="modal-footer" style="margin-top: 20px;">
+					<button class="btn-secondary" onclick="document.getElementById('modal-pads-rayo').classList.remove('active')" style="width: 100%; padding: 12px; border-radius: 8px; background: #222; color: #eee; border: none; cursor: pointer;" data-i18n="btn_close">CERRAR</button>
+				</div>
+			</div>
+		</div>
+		<div id="modal-afinador" class="modal-overlay" onclick="cerrarAfinador()">
+			<div class="config-window afinador-shell" onclick="event.stopPropagation()" style="max-width: 400px; height: 500px; border-radius: 20px; background: #111;">
+				<header class="config-header">
+					<span class="material-icons" onclick="cerrarAfinador()" style="cursor:pointer; color:var(--accent-color);">close</span>
+					<span class="panel-title-text" data-i18n="tuner_title">Afinador de Precisión</span>
+				</header>
+
+				<!-- Todo lo de adentro queda igual -->
+				<div class="tuner-body" style="flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; padding: 20px;">
+					<div class="tuner-notes" style="display:flex; gap:15px; align-items:baseline; margin-bottom:10px; color:#444;">
+						<span id="note-left-2" style="font-size: 1.2rem;">--</span>
+						<span id="note-left-1" style="font-size: 1.5rem;">--</span>
+						<span id="note-center" style="font-size: 4rem; font-family: var(--f-bold); color: #555;">--</span>
+						<span id="note-right-1" style="font-size: 1.5rem;">--</span>
+						<span id="note-right-2" style="font-size: 1.2rem;">--</span>
+					</div>
+					
+					<div id="tuner-hz" style="color:#666; font-size: 1rem; margin-bottom:40px;">0.0 Hz</div>
+
+					<div class="gauge-container" style="position:relative; width:250px; height:150px; overflow:hidden;">
+						<div class="dial-marks" style="position:absolute; width:100%; height:100%; border-radius:150px 150px 0 0; border: 2px solid #222; border-bottom:none;"></div>
+						
+						<div id="tuner-needle" style="position:absolute; bottom:0; left:50%; width:3px; height:130px; background:#ff4444; transform-origin: bottom center; transform: translateX(-50%) rotate(-50deg); transition: transform 0.1s ease-out, background 0.2s;">
+							<div style="position:absolute; top:-5px; left:-2px; width:7px; height:7px; background:inherit; border-radius:50%;"></div>
+						</div>
+						
+						<div style="position:absolute; bottom:-10px; left:50%; width:20px; height:20px; background:#333; border-radius:50%; transform:translateX(-50%); border: 4px solid #111;"></div>
+					</div>
+					
+					<div style="display:flex; justify-content:space-between; width:200px; margin-top:10px; color:#444; font-family:monospace;">
+						<span>b</span>
+						<span>||</span>
+						<span>#</span>
+					</div>
+				</div>
+			</div>
+		</div>
+		<div id="modal-busqueda-online" class="modal-overlay" onclick="cerrarModalBusqueda()">
+			<div onclick="event.stopPropagation()" style="margin: auto; width: 90%; max-width: 260px; height: auto; position: relative; border-radius: 16px; background: #151515; padding: 20px; box-shadow: 0 15px 35px rgba(0,0,0,0.8);">
+				
+				<header style="display: flex; align-items: center; gap: 15px; margin-bottom: 20px; border-bottom: 1px solid #222; padding-bottom: 12px;">
+					<span class="material-icons" onclick="cerrarModalBusqueda()" style="cursor:pointer; color: #555; font-size: 1.2rem;">close</span>
+					<span style="color: #aaa; font-size: 0.95rem; font-family: var(--f-bold); text-transform: uppercase;" data-i18n="search_in">Buscar en:</span>
+				</header>
+
+				<div style="display: flex; flex-direction: column; gap: 10px;">
+					<button class="btn-platform btn-youtube" onclick="ejecutarBusqueda('youtube')">
+						<span class="material-icons">smart_display</span> YouTube
+					</button>
+					<button class="btn-platform btn-spotify" onclick="ejecutarBusqueda('spotify')">
+						<span class="material-icons">headphones</span> Spotify
+					</button>
+					<button class="btn-platform btn-tidal" onclick="ejecutarBusqueda('tidal')">
+						<span class="material-icons">waves</span> Tidal
+					</button>
+				</div>
+			</div>
+		</div>
+	
+		<div id="modal-compartir" class="modal-overlay" onclick="cerrarVistaPreviaCompartir()" style="z-index: 12000; align-items: flex-start; display: none;">
+			<div class="print-panel-ios" onclick="event.stopPropagation()">
+				
+				<div class="print-header">
+					<span class="material-icons btn-icon-print" onclick="cerrarVistaPreviaCompartir()">close</span>
+					<span class="print-title" data-i18n="share_title">Compartir</span>
+					<span class="material-icons btn-icon-print" style="color: transparent;">upload</span>
+				</div>
+
+			<div class="print-body">
+				
+				<div style="display: flex; justify-content: space-between; gap: 8px; margin-bottom: 20px;">
+					<button onclick="ejecutarCompartirNativo('pdf')" style="flex: 1; padding: 12px 5px; background: #1c1c1e; color: #fff; border-radius: 12px; font-family: var(--f-bold); border: 1px solid #333; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; transition: 0.2s;">
+						<span class="material-icons" style="color: var(--accent-color); font-size: 1.2rem;">picture_as_pdf</span> PDF
+					</button>
+					<button onclick="ejecutarCompartirNativo('pbk')" style="flex: 1; padding: 12px 5px; background: #1c1c1e; color: #fff; border-radius: 12px; font-family: var(--f-bold); border: 1px solid #333; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; transition: 0.2s;">
+						<span class="material-icons" style="color: var(--accent-color); font-size: 1.2rem;">layers</span> PraiseBook
+					</button>
+					<button onclick="ejecutarCompartirNativo('cho')" style="flex: 1; padding: 12px 5px; background: #1c1c1e; color: #fff; border-radius: 12px; font-family: var(--f-bold); border: 1px solid #333; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; transition: 0.2s;">
+						<span class="material-icons" style="color: var(--accent-color); font-size: 1.2rem;">description</span> ChordPro
+					</button>
+				</div>
+
+				<div class="ios-block" style="margin-bottom: 15px; background: transparent;">
+					<div class="ios-row" style="justify-content: center; background: color-mix(in srgb, var(--accent-color) 15%, transparent); border: 2px solid var(--accent-color); border-radius: 12px; cursor: pointer; min-height: 50px; transition: all 0.2s ease;" onclick="ejecutarCompartirNativo('pdf')" onmousedown="this.style.transform='scale(0.96)'" onmouseup="this.style.transform='scale(1)'" ontouchstart="this.style.transform='scale(0.96)'" ontouchend="this.style.transform='scale(1)'">
+						<span class="material-icons" style="color: var(--accent-color); font-size: 1.5rem; margin-right: 10px;">print</span>
+						<span style="color: var(--accent-color); font-family: var(--f-bold); font-size: 1.1rem; letter-spacing: 1px;" data-i18n="share_print">IMPRIMIR</span>
+					</div>
+				</div>
+
+				<div class="ios-block">
+					<div class="ios-row flex-between">
+						<span class="ios-label" data-i18n="share_colors">Imprimir con Colores</span>
+						<label class="switch-elegante" style="transform: scale(0.9); transform-origin: right; margin: 0;">
+							<input type="checkbox" id="comp-opt-colores" checked onchange="actualizarMiniaturasCompartir()">
+							<span class="slider-round"></span>
+						</label>
+					</div>
+
+					<div class="ios-divider"></div>
+
+					<div class="ios-row flex-between">
+						<span class="ios-label" data-i18n="share_chords">Imprimir con Acordes</span>
+						<label class="switch-elegante" style="transform: scale(0.9); transform-origin: right; margin: 0;">
+							<input type="checkbox" id="comp-opt-acordes" checked onchange="actualizarMiniaturasCompartir()">
+							<span class="slider-round"></span>
+						</label>
+					</div>
+
+					<div class="ios-divider"></div>
+
+					<div class="ios-row flex-between">
+						<span class="ios-label" data-i18n="share_orientation">Orientación</span>
+						<div class="stepper-group">
+							<span id="comp-ori-label" class="ios-value" style="color: #fff;">Vertical</span>
+							<div class="stepper-controls">
+								<div class="stepper-btn active-ori" id="btn-comp-ori-vert" onclick="cambiarOrientacionComp('portrait')">
+									<span class="material-icons" style="font-size: 18px; transform: rotate(0deg);">portrait</span>
+								</div>
+								<div class="stepper-divider"></div>
+								<div class="stepper-btn" id="btn-comp-ori-horiz" onclick="cambiarOrientacionComp('landscape')">
+									<span class="material-icons" style="font-size: 18px; transform: rotate(90deg);">portrait</span>
+								</div>
+							</div>
+						</div>
+					</div>
+
+					<div class="ios-divider"></div>
+
+					<div class="ios-row flex-between">
+						<span class="ios-label" data-i18n="share_scale">Escala</span>
+						<div class="stepper-group">
+							<span class="stepper-val" id="comp-escala-val">100 %</span>
+							<div class="stepper-controls">
+								<div class="stepper-btn" onclick="cambiarEscalaComp(-10)">−</div>
+								<div class="stepper-divider"></div>
+								<div class="stepper-btn" onclick="cambiarEscalaComp(10)">+</div>
+							</div>
+						</div>
+					</div>
+				</div>
+
+				<div class="ios-block">
+					<div class="ios-row" style="display: flex; justify-content: space-between; align-items: center; cursor: pointer;" onclick="ciclarColumnasComp()">
+						<span class="ios-label" data-i18n="share_layout">Disposición</span>
+						<div class="ios-value-group" style="display: flex; align-items: center; gap: 5px;">
+							<span class="ios-value" id="comp-cols-val">1 columna por hoja</span>
+							<span class="material-icons ios-arrow">chevron_right</span>
+						</div>
+					</div>
+				</div>
+
+				<div class="print-preview-scroll" id="comp-thumbnails-container">
+				</div>
+
+			</div>
+			</div>
+		</div>
+		<div id="modal-sincronizacion" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 9999; justify-content: center; align-items: center; padding: 20px;">
+			<div style="background: var(--bg-panels, #fff); padding: 25px; border-radius: 15px; text-align: center; width: 100%; max-width: 350px; box-shadow: 0 10px 25px rgba(0,0,0,0.2);">
+				
+				<h2 style="margin-bottom: 15px; color: var(--text-dark, #333);" data-i18n="sync_title">Vincular con PC</h2>
+				<p style="color: #666; font-size: 14px;" data-i18n="sync_step1">1. Abre este enlace en tu computadora:</p>
+				
+				<div style="display: flex; align-items: center; justify-content: space-between; background: #f0f0f0; padding: 10px; border-radius: 8px; margin: 10px 0;">
+					<span id="link-pc" style="font-size: 12px; color: #2196F3; font-weight: bold; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">https://praisebook.github.io/praisebook-pc/</span>
+					<button onclick="copiarLinkPC()" style="background: #2196F3; color: white; border: none; padding: 8px; border-radius: 5px; cursor: pointer; display: flex; align-items: center;">
+						<span class="material-icons" style="font-size: 16px;">content_copy</span>
+					</button>
+				</div>
+
+				<p style="color: #666; font-size: 14px; margin-top: 15px;" data-i18n="sync_step2">2. Ingresa este PIN en la PC:</p>
+				<h1 id="pin-display" style="font-size: 45px; letter-spacing: 8px; color: #333; margin: 10px 0;">----</h1>
+				
+				<p id="sync-status" style="color: #f44336; font-size: 14px; font-weight: bold; margin-bottom: 20px;" data-i18n="sync_waiting">Esperando conexión...</p>
+				
+				<button onclick="cerrarModalSincronizacion()" style="width: 100%; padding: 12px; background: #ccc; border: none; border-radius: 8px; font-weight: bold; font-size: 16px; cursor: pointer;" data-i18n="btn_cancel">Cancelar / Cerrar</button>
+			</div>
+		</div>	
+		    <script src="script.js?v=3"></script>
+    </body>
+</html>
