@@ -1,0 +1,4034 @@
+/* ==========================================================================
+   1. REGISTRO DE FUENTES - Inter-Medium e Inter-ExtraBold
+   ========================================================================== */
+@font-face {
+    font-family: 'Inter-Medium';
+    src: url('Inter-Medium.ttf') format('truetype');
+}
+
+@font-face {
+    font-family: 'Inter-ExtraBold';
+    src: url('Inter-ExtraBold.ttf') format('truetype');
+}
+
+/* ==========================================================================
+   2. CONFIGURACIÓN DE VARIABLES (ROOT)
+   ========================================================================== */
+:root {
+    /* --- ESTRUCTURA DE LA APP --- */
+    --bg-black: #000000;
+    --header-gris: #1a1a1a;
+    --glass-bg: rgba(255, 255, 255, 0.1);
+    --glass-border: rgba(255, 255, 255, 0.2);
+
+    /* --- INTERFAZ / ENFASIS (Botones, Iconos, Sliders) --- */
+    --accent-color: #00FFFF; 
+
+    /* --- CANCIÓN CARGADA (Contenido de pantalla) --- */
+	--chord-color: #00ffff;     /* Cambiado a Cian por defecto */
+    --lyrics-color: #ffffff;    /* Color de la letra (Blanco) */
+    --structure-color: #888888; /* Color de CORO, ESTROFA, etc. (Gris) */
+
+    /* --- RECURSOS GLOBALES --- */
+    --text-white: #ffffff;
+    --f-medium: 'Inter-Medium', sans-serif;
+    --f-bold: 'Inter-ExtraBold', sans-serif;
+    --font-chords: var(--f-medium); 
+    --user-letter-spacing: 0px; 
+    --highlight-color: transparent; 
+}
+
+/* ==========================================================================
+   3. RESETEO Y ESTILOS GLOBALES (APK STYLE)
+   ========================================================================== */
+* {
+    box-sizing: border-box;
+    -webkit-tap-highlight-color: transparent;
+}
+
+*::-webkit-scrollbar { 
+    display: none !important; 
+}
+/* Ocultar barras desplazadoras en toda la App */
+* {
+    scrollbar-width: none !important;
+    -ms-overflow-style: none !important;
+}
+
+/* Control del PLAY de la letra */
+html, body { 
+    margin: 0; 
+    padding: 0;
+    background-color: var(--bg-black) !important;
+    color: var(--text-white) !important;
+    font-family: var(--f-medium);
+    
+    /* Bloqueamos el scroll horizontal para que la app no tiemble hacia los lados */
+    overflow-x: hidden !important;
+    
+    /* LIBERAMOS EL SCROLL VERTICAL: Vital para que el Auto-Scroll JS funcione */
+    overflow-y: auto !important; 
+    
+    /* Dejamos que la página crezca de forma natural según el largo de la canción */
+    height: auto !important; 
+}
+/* ==========================================================================
+   4. ASIGNACIÓN DE FUENTES ESPECÍFICAS
+   ========================================================================== */
+/* CÓDIGO LIMPIO: */
+.lyrics-container, .s-author, .song-title-mini, #clock, 
+.song-info-header span, .tab {
+    font-family: var(--f-medium) !important;
+}
+
+/* su única función en conjunto es transformar los acordes en en INTER EXTRA BOLD */
+/* 1. ACORDES */
+.chord, 
+.song-viewer pre .chord, 
+.linea-acorde .chord,
+.chord-row .chord {
+    font-family: var(--f-medium) !important; /* GARANTIZA TU FUENTE INTER */
+    color: var(--chord-color) !important;
+    font-weight: 500 !important;
+    font-size: calc(var(--user-chord-size, 15px) * var(--zoom-level, 1)) !important;
+    line-height: 1 !important;
+    display: inline !important;
+    margin: 0 !important;
+    padding: 0 !important;
+}
+
+.linea-acorde {
+    display: block !important;
+    min-height: 1.2em;
+    margin-top: 5px !important;
+    white-space: pre-wrap !important;
+}
+
+.chord-space {
+    display: inline-block;
+    width: 6px; /* Pequeño respiro si caen dos acordes en la misma palabra */
+}
+/* --- CORRECCIÓN: NEGRITA Y CURSIVA INDEPENDIENTES PARA ACORDES --- */
+/* 1. Protegemos a los acordes de heredar la cursiva de las letras */
+.chord, 
+.song-viewer pre .chord, 
+.linea-acorde .chord,
+.chord-word-block .chord,
+.chunk-box .chord {
+    font-style: normal !important; 
+}
+
+/* 2. Forzamos la Negrita superando cualquier otra regla */
+.chord.texto-negrita,
+.song-viewer pre .chord.texto-negrita,
+.linea-acorde .chord.texto-negrita,
+.chord-word-block .chord.texto-negrita,
+.chunk-box .chord.texto-negrita {
+    font-family: var(--f-bold) !important; 
+    font-weight: 800 !important;
+}
+
+/* 3. Forzamos la Cursiva superando cualquier otra regla */
+.chord.texto-cursiva,
+.song-viewer pre .chord.texto-cursiva,
+.linea-acorde .chord.texto-cursiva,
+.chord-word-block .chord.texto-cursiva,
+.chunk-box .chord.texto-cursiva {
+    font-style: italic !important;
+}
+
+/* ==========================================================================
+   5. HEADER PRINCIPAL (TOP BAR)
+   ========================================================================== */
+/*Su función en conjunto es crear la franja negra de 50px que ves arriba. Y la barra nunca se movera */
+.top-bar { 
+    height: 50px;
+    background: var(--header-gris); 
+    border-bottom: 1px solid #333;
+    display: flex; 
+    align-items: center; 
+    justify-content: space-between; 
+    padding: 0 15px; 
+    position: fixed; 
+    top: 0; left: 0; width: 100%; 
+    z-index: 1000; 
+}
+/*Es el eje de alineación. Su única misión es decirle al navegador: 
+"Toma todo el espacio que sobre en el medio (flex: 1) y centra todo lo que pongamos dentro" TITULO Y RELOJ DEBAJO */
+.header-center { text-align: center; line-height: 1.1; flex: 1; min-width: 0 !important; /* Le da permiso de encogerse */
+    padding: 0 10px; /* Un pequeño margen para que no se pegue a los iconos */
+} 
+
+/* Esto hace que el titulo de arriba no se deforme por lo largo que pueda ser */
+.song-title-mini {
+    font-family: var(--f-medium) !important;
+    font-weight: 500 !important;
+    font-size: 0.8rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis; 
+    max-width: 250px;
+    margin: 0 auto;
+}
+/* Lo que estara debajo del titulo, en este caso EL RELOJ */
+.clock { font-size: 0.7rem; color: #888; }
+/* Alinea los iconos que estan a la derecha */
+.header-right { display: flex; gap: 12px; align-items: center; }
+/* Boton 3 rayas de la derecha */
+.menu-icon-large { font-size: 1.8rem; color: var(--accent-color); cursor: pointer; }
+/* Color gris de los iconos, sin color */
+.header-right .material-icons:not(.menu-icon-large) { font-size: 1.4rem; color: var(--accent-color); }
+
+/* ==========================================================================
+   6. VISOR DE CANCIONES (SONG VIEWER)
+   ========================================================================== */
+   
+/* ------------- HEADER DEL TITULO Y TONALIDAD ----------------- */
+
+/* CABECERA DE INFO (TÍTULO Y TONO) */
+.song-info-header {
+    display: flex; 
+    justify-content: space-between; 
+    align-items: center;
+    padding: 15px 20px;
+    background: #000;
+    border-bottom: 1px solid #111;
+}
+
+/* TÍTULO PRINCIPAL DE LA CANCIÓN - Header del titulo */
+.main-title { 
+    font-size: 1.3em; 
+    margin: 0; 
+    line-height: 1; 
+}
+
+/* NOMBRE DEL ARTISTA O AUTOR */
+.author-name { 
+    color: #888; 
+    font-size: 0.9em; 
+    display: block; 
+}
+
+/* Boton TONALIDAD */
+.key-badge {
+    background-color: color-mix(in srgb, var(--accent-color) 15%, transparent) !important;
+    border: 1px solid color-mix(in srgb, var(--accent-color) 40%, transparent) !important;
+    padding: 4px 12px; 
+    border-radius: 50px !important; /* <-- ESTO ELIMINA LAS ESQUINAS POR COMPLETO */
+    font-weight: bold; 
+    font-size: 0.9rem;
+    cursor: pointer; 
+    align-self: center;
+}
+/* --- FUERZA EL COLOR BLANCO PARA LA PALABRA "TONO:" --- */
+.key-badge span:first-child {
+    color: #ffffff !important;
+    -webkit-text-fill-color: var(--accent-color) !important; /* Mata cualquier bloqueo de navegador */
+    opacity: 1 !important; /* Le quita ese aspecto grisáceo/transparente */
+}
+/* --- TAMAÑO DEL ACORDE del boton Tonalidad --- */
+#header-tone-label {
+    font-size: 20px !important;  /* <-- Cambia este número para hacerlo más grande o chico */
+    color: white;  /* Para que brille con el color de tu app */
+    margin-left: 3px;            /* Separa un poquito el texto del icono de la nota */
+}
+
+/* ----------------------  CAPO TRASTE -------------------------------------------*/
+/* --- ESTILOS DEL INDICADOR DE CAPO --- */
+/* Contenedor general del Capo */
+#capo-indicator {
+    color: #888888 !important; /* Gris para "Capo 1 -" */
+    font-size: 15px !important; /* Tamaño general */
+	font-family: var(--f-bold);
+}
+
+/* ESTO AGRANDA EL ACORDE (Ej: F#) */
+#capo-indicator span {
+    color: var(--lyrics-color) !important; /* Blanco o negro según el tema */
+    font-size: 18px !important; /* <--- AJUSTA ESTE NÚMERO A TU GUSTO */
+    font-weight: 900 !important;
+    margin-right: 4px; /* Espacio antes del guión */
+}
+
+/* ----------------------  FIN DE CAPO TRASTE -------------------------------------------*/
+
+/*----------------------------------- fin del header del titulo -------------------------------------*/
+
+/* Alineacion central con estritura izquierda - Esto es de la LETRA que esta en la pantalla */
+.lyrics-container { 
+    display: flex;            /* Activamos el modo flexible */
+    flex-direction: column;   /* Las líneas de texto van hacia abajo */
+    align-items: center;      /* ESTO centra el bloque completo en la pantalla */
+    width: 100%;              /* Ocupa todo el ancho disponible */
+    margin: 0 auto;           /* Centrado automático */
+    padding-bottom: 180px;    /* Espacio para no chocar con los botones */
+    padding-top: 10px;        /* Espacio superior */
+}
+
+/* Esto hace que la LETRA se acomode cuando se hace ZOOM, osea, asi se haga zoom la LETRA se acomodara y aun se vera*/
+.song-viewer pre {
+    display: block !important;
+    margin: 0 auto !important;
+    text-align: left !important;
+    
+    /* MANTIENE LA LÍNEA RECTA CLÁSICA */
+    white-space: pre !important; 
+    word-wrap: normal !important;
+    width: max-content !important; 
+
+    /* TODO EN INTER */
+    font-family: var(--f-medium) !important;
+    font-size: calc(var(--user-font-size, 15px) * var(--zoom-level, 1)) !important; 
+    line-height: var(--user-line-height, 1.6) !important;
+    color: var(--lyrics-color) !important;
+    
+    letter-spacing: var(--user-letter-spacing, 0px) !important;
+    margin-top: 0 !important;
+    padding-top: 0 !important;
+}
+/* El cuadro invisible que amarra el acorde y la palabra entera (Todo en Inter) */
+.chord-word-block {
+    display: inline-block !important; /* Se comporta como un bloque de texto que no se rompe */
+    vertical-align: bottom !important;
+    position: relative !important;
+    margin: 0 !important;
+    padding: 0 !important;
+}
+
+/* El acorde flotante arriba de la palabra (Todo en Inter) */
+.chord-word-block .chord {
+    font-family: var(--f-medium) !important;
+    color: var(--chord-color) !important;
+    font-weight: 500 !important;
+    font-size: calc(var(--user-chord-size, 15px) * var(--zoom-level, 1)) !important;
+    
+    position: absolute !important;
+    bottom: 1.1em !important; /* Lo levanta justo encima de la letra */
+    left: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    line-height: 1 !important;
+    white-space: nowrap !important;
+}
+/* Esto es el espacio para .song-viewer */
+#viewer {
+    overflow: visible !important;
+}
+
+/* =========================================
+   CONTENEDOR DE CONTROLES FLOTANTES (CÁPSULA UNIFICADA)
+   ========================================= */
+.floating-controls {
+    position: fixed; 
+    bottom: 25px; 
+    width: 100%;
+    display: flex; 
+    justify-content: center; 
+    align-items: center; 
+    z-index: 2000;
+    pointer-events: none;
+}
+
+/* HABILITACIÓN DE CLIC EN BOTONES */
+.floating-controls > * { pointer-events: auto; }
+
+
+/* LÍNEA VERTICAL FINA QUE SEPARA SECCIONES */
+.cap-divider {
+    width: 1px;
+    height: 24px;
+    background-color: rgba(255, 255, 255, 0.2);
+}
+
+/* GRUPO DEL ZOOM (+ R -) */
+.cap-zoom-group {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.reset-btn { font-weight: bold; color: #fff; cursor: pointer; font-size: 1rem; font-family: monospace; }
+
+/* Efecto de Vidrio Esmerilado */
+.glass { 
+    background: var(--glass-bg) !important; /* 👈 AQUÍ EL CAMBIO MAGISTRAL PARA QUE SEA CRISTAL */
+    backdrop-filter: blur(15px); 
+    -webkit-backdrop-filter: blur(15px); 
+    border: 1px solid var(--glass-border) !important; 
+    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.3); /* Sombra suavizada para resaltar el vidrio */
+}
+
+.floating-controls.dynamic-island {
+    /* Diseño compacto y unificado */
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50px;
+    padding: 3px 16px;
+    gap: 12px;
+    
+    /* Seguro anti-desborde móvil */
+    width: max-content;
+    max-width: 95vw; 
+    box-sizing: border-box;
+    
+    /* Centrado y anclaje */
+    position: fixed !important;
+    bottom: 25px !important; 
+    left: 50% !important;
+    z-index: 5000 !important;
+    
+    /* 🔥 EL ANCLA MÁGICA PARA MÓVILES (Fuerza la GPU) 🔥 */
+    transform: translate3d(-50%, 0, 0) !important;
+    -webkit-transform: translate3d(-50%, 0, 0) !important;
+    will-change: transform;
+}
+
+/* Línea Vertical Fina (Divisor) */
+.cap-divider {
+    width: 1px;
+    height: 28px; 
+    background-color: rgba(255, 255, 255, 0.15);
+}
+
+/* Grupos Internos */
+.cap-center-group, .cap-zoom-group {
+    display: flex;
+    align-items: center;
+}
+
+/* 🔥 AQUÍ ESTÁ LA MAGIA DE LOS ESPACIOS 🔥 */
+.cap-center-group { gap: 12px; } /* Más aire para la barra y los botones de velocidad */
+.cap-zoom-group { gap: 4px; }   /* Muy reducido para compactar el zoom (- R +) */
+
+/* Estilo de Botones Unificado, Circular y GRIS SUAVE */
+.dynamic-island .cap-btn {
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    
+    /* Color gris suave, no blanco puro */
+    color: rgba(255, 255, 255, 0.8) !important;
+    
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+    padding: 0;
+    margin: 0;
+    
+    /* Círculo forzado */
+    border-radius: 50% !important; 
+    width: 34px;  
+    height: 34px; 
+    overflow: hidden; 
+    
+    transition: opacity 0.2s ease, background-color 0.2s ease, transform 0.1s ease;
+}
+
+/* Material Icons generales en gris suave */
+.dynamic-island .cap-btn .material-icons {
+    font-size: 20px;
+    color: inherit; /* Hereda el gris suave */
+}
+
+/* Clase para botones más grandes */
+.dynamic-island .cap-btn.btn-large {
+    width: 46px !important;
+    height: 46px !important;
+}
+
+/* Botones de texto (+ y -) */
+.dynamic-island .cap-btn.text-btn {
+    font-size: 24px;
+    font-weight: bold;
+    font-family: monospace;
+}
+
+/* Target específico para el botón del metrónomo */
+#metroBtn img {
+    width: 28px !important; 
+    height: 28px !important; 
+    opacity: 0.8; /* Mantiene la suavidad */
+}
+
+/* 🔥 TARGET ESPECÍFICO PARA EL ICONO DE LA FLECHA / PAUSA 🔥 */
+#scrollBtn #scrollIcon {
+    font-size: 18px !important; /* Más chico para que la pausa no se vea gigante */
+    line-height: 1 !important;  /* Forza un centrado vertical perfecto */
+    letter-spacing: -1px;       /* Junta las dos barras del '||' para que luzca como icono */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+/* Efectos Circulares al Tocar/Pasar */
+.dynamic-island .cap-btn:hover {
+    background-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+.dynamic-island .cap-btn:active {
+    opacity: 0.6;
+    background-color: rgba(255, 255, 255, 0.2) !important;
+    transform: scale(0.9);
+}
+
+/* 🔥 SLIDER DE VELOCIDAD MÁS ANCHO 🔥 */
+.dynamic-island .cap-slider {
+    width: 100px; /* Aumentado de 70px a 100px para que se vea como en tu imagen */
+    margin: 0;
+    cursor: pointer; 
+    
+    /* Color acento suave para el thumb circular */
+    accent-color: var(--accent-color); 
+}
+
+/* Botón Reset (R) en gris suave */
+.reset-btn { 
+    font-weight: bold; 
+    color: inherit; /* Hereda el gris suave */
+    font-size: 1rem; 
+    font-family: monospace; 
+}
+
+/*----------------------------------------------------fin botones flotantes----------------------------------------*/
+/* =========================================
+   AQUÍ COMIENZA TU CÓDIGO INTACTO DEL PANEL
+   ========================================= */
+
+/* CAPA DE FONDO DEL PANEL LATERAL */
+.side-panel-overlay {
+    position: fixed; top: 0; left: -100%; width: 100%; height: 100%;
+    background: rgba(0,0,0,0); /* Empieza transparente */
+    z-index: 6000; /* RESPETA TU Z-INDEX ORIGINAL */
+    /* Retrasa el "left" al cerrar para que se vea el difuminado sin cortar de golpe */
+    transition: background 0.3s ease, left 0s 0.3s; 
+    display: flex;
+}
+
+/* ACTIVACIÓN DEL PANEL LATERAL */
+.side-panel-overlay.active { 
+    left: 0; 
+    background: rgba(0,0,0,0.6); /* Sombra oscura gradual como en accesos rápidos */
+    transition: background 0.3s ease, left 0s; 
+}
+
+
+/* ==========================================================================
+   DISEÑO RESPONSIVO (TABLETS Y PC) - UNIFICADO Y CORREGIDO
+   ========================================================================== */
+
+/* 1. CUERPO PRINCIPAL DEL PANEL LATERAL (Aplica en celular y PC) */
+.panel-content {
+    width: 80%; 
+    max-width: 400px; 
+    height: 100%; 
+    background: #121212;
+    display: flex; 
+    flex-direction: column; 
+    box-shadow: 10px 0 30px rgba(0,0,0,0.7); 
+    transform: translateX(-100%); 
+    transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+    will-change: transform; 
+}
+
+/* 2. CENTRADOR INTELIGENTE DE PÁGINAS (Aplica en celular y PC) */
+body.modo-paginas .song-slide pre {
+    width: max-content !important; 
+    max-width: none !important; 
+    margin: 0 auto !important; 
+}
+
+/* 3. REGLAS EXCLUSIVAS PARA PANTALLAS GRANDES (Tablets y PC) */
+@media (min-width: 768px) {
+    /* Bordes curvos del panel lateral */
+    .panel-content {
+        border-top-right-radius: 25px; 
+        border-bottom-right-radius: 25px;
+    }
+
+    /* Ventana de ajustes centrada y curva */
+    .config-window {
+        max-width: 1100px; 
+        height: 85vh !important; 
+        margin: auto; 
+        border-radius: 25px !important; 
+        overflow: hidden !important; 
+        box-shadow: 0 25px 60px rgba(0,0,0,0.9); 
+    }
+
+    /* Fondo menos oscuro para que no moleste a la vista */
+    #config-modal.active {
+        background-color: rgba(0,0,0,0.6) !important;
+    }
+
+    /* Distribución 40/60 exacta y sin deformarse */
+    .config-container {
+        flex-direction: row !important;
+    }
+    .config-sidebar {
+        width: 40% !important;
+        flex: 0 0 40% !important; 
+        display: block !important; 
+        border-right: 1px solid #222 !important; 
+    }
+    .config-content {
+        width: 60% !important;
+        flex: 0 0 60% !important; 
+        display: block !important; 
+        padding: 40px 60px !important; 
+    }
+
+    /* 🔥 LA SOLUCIÓN AL MONITOR DE VISTA PREVIA 🔥 */
+    /* Lo adaptamos al nuevo padding de 40px 60px para que encaje como guante */
+    .contenedor-monitor-fijo {
+        top: -40px !important;
+        margin: -40px -60px 25px -60px !important; 
+        padding: 30px 60px 15px 60px !important;
+    }
+    .live-preview-box {
+        height: 280px !important; 
+        border-radius: 12px !important;
+    }
+}
+/* 🔥 ESCUDO ANTI-ZOOM POR DOBLE TOQUE PARA LOS BOTONES FLOTANTES 🔥 */
+.dynamic-island .cap-btn,
+.floating-player .control-btn,
+.floating-player .cap-btn {
+    touch-action: manipulation !important;
+}
+/*--------------------------------------- fin modo tablet -------------------------------*/
+/* DESLIZAMIENTO DEL PANEL AL ABRIR */
+.side-panel-overlay.active .panel-content {
+    transform: translateX(0);
+}
+
+/* CABECERA DEL PANEL LATERAL */
+.panel-header { 
+    height: 50px; background: #1a1a1a; display: flex; 
+    align-items: center; padding: 0 15px; border-bottom: 1px solid #333; 
+}
+
+/* TEXTO DEL TÍTULO EN EL PANEL */
+.panel-title-text { 
+    flex: 1; 
+    margin-left: 15px; 
+    font-family: var(--f-bold) !important; /* Cambiado a Bold para que resalte */
+    font-weight: 800 !important;
+    font-size: 0.9rem; 
+    text-transform: uppercase;
+    color: var(--accent-color) !important; /* Color de énfasis */
+}
+
+/* ICONO DE FIJADO (PIN) */
+/* Estado normal (Gris) */
+.pin-icon { 
+    font-size: 1.4rem; 
+    color: #666 !important; 
+    cursor: pointer; 
+    transition: all 0.2s ease;
+    display: inline-block !important; /* VITAL: Sin esto no gira */
+}
+
+/* Estado activo (Verde/Rojo y Girado) */
+.pin-icon.pinned { 
+    color: var(--accent-color) !important; 
+    transform: rotate(45deg) !important; 
+}
+
+/* SECCIÓN DE BÚSQUEDA */
+.search-section { padding: 15px; border-bottom: 1px solid #222; }
+
+/* BARRA DE BÚSQUEDA */
+.search-bar { 
+    background: #222; border-radius: 8px; padding: 8px 12px; 
+    display: flex; align-items: center; margin-bottom: 10px;
+}
+
+/* CAMPO DE TEXTO DE BÚSQUEDA */
+.search-bar input { background: transparent; border: none; color: white; flex: 1; outline: none; }
+
+/* BARRA Y ETIQUETA DE ORDENAMIENTO */
+.sort-bar { display: flex; align-items: center; justify-content: flex-end; padding: 5px 15px; font-size: 0.75rem; color: #888; }
+.sort-selector-wrapper { position: relative; display: inline-block; cursor: pointer; color-scheme: dark; width: auto; }
+#current-sort-label { color: var(--accent-color) !important; font-weight: bold; }
+
+/* SELECTOR DE ORDEN (OCULTO/FUNCIONAL) */
+#sort-options {
+    position: absolute; top: 0; right: 0; width: 100%; height: 100%;
+    opacity: 0; cursor: pointer; direction: rtl;
+}
+/* ==========================================================================
+   LISTA DE CANCIONES (Unificada y al extremo derecho)
+   ========================================================================== */
+.songs-list { 
+    flex: 1; 
+    min-height: 200px; 
+    display: block !important; 
+    
+    /* Configuración de Scroll (Rescatado de tu primer bloque) */
+    overflow-y: auto; 
+    -webkit-overflow-scrolling: touch; 
+    
+    /* 🔥 LA MAGIA DEL ESPACIO: Arriba 10px, Derecha 0px (Extremo), Abajo 10px, Izq 15px */
+    padding: 10px 0px 10px 0px !important; 
+}
+/* INSIGNIA DE TONALIDAD (BADGE) */
+.song-key-badge {
+    color: var(--accent-color); 
+    font-family: var(--f-bold);
+    font-size: 0.75rem;
+    margin-right: 0px !important;
+    background: rgba(152, 251, 152, 0.1);
+    padding: 2px 5px;
+    border-radius: 4px;
+}
+
+/* ELEMENTO INDIVIDUAL DE LA LISTA */
+.song-item {
+    display: flex; 
+    justify-content: space-between; 
+    align-items: center;
+    padding: 12px 15px; 
+    border-bottom: 1px solid #1a1a1a; 
+    gap: 12px; 
+    background-color: #000;
+}
+
+/* CONTENEDORES DE ACCIONES Y TEXTO */
+.song-actions-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    position: relative;
+	margin-right: -8px !important;
+}
+.song-text-wrapper { flex: 1; min-width: 0; cursor: pointer; }
+
+/* MODO SELECCIÓN Y SEÑALIZACIÓN */
+/* Ajuste para el modo de selección masiva */
+.modo-seleccion-activo .song-item { 
+    /* Cambiado de rgba fijo a color dinámico */
+border-left: 8px solid color-mix(in srgb, var(--accent-color) 10%, transparent) !important; 
+    transition: all 0.2s ease; 
+}
+.select-indicator { 
+    display: none; 
+    margin-right: 10px; 
+    color: var(--accent-color); 
+}
+.modo-seleccion-activo .select-indicator { display: inline-block; }
+
+/* ==========================================================================
+   8.1 MENÚS DE ACCIONES (BULK Y OPCIONES)
+   ========================================================================== */
+/* CONTENEDOR DEL MENÚ DE ACCIONES MASIVAS */
+.bulk-menu-up {
+    display: none;
+    position: absolute;
+    bottom: 50px;
+    right: 5px;
+    background: #1e1e1e;
+    border: 1px solid #444;
+    border-radius: 12px;
+    min-width: 190px;
+    z-index: 9999;
+    box-shadow: 0 8px 25px rgba(0,0,0,0.8);
+    overflow: hidden;
+    animation: menuFadeIn 0.2s ease-out;
+}
+
+/* ESTADO ACTIVO DEL MENÚ */
+.bulk-menu-up.active { 
+    display: block; 
+}
+
+/* OPCIÓN INDIVIDUAL DEL MENÚ */
+.menu-item { 
+    padding: 12px 16px; 
+    display: flex; 
+    align-items: center; 
+    gap: 12px; 
+    color: #eee; 
+    font-size: 14px; 
+    cursor: pointer; 
+}
+
+/* ESTADO DE INTERACCIÓN (HOVER/TOUCH) */
+.menu-item:hover, 
+.menu-item:active { 
+    background: #333; 
+}
+
+/* OPCIÓN DE ELIMINAR (ESTILO DE ALERTA) */
+.menu-item.delete { 
+    color: #ffb347 !important; /* Naranja Pastel */
+} 
+
+/* OPCIÓN DESHABILITADA */
+.menu-item.disabled { 
+    opacity: 0.3; 
+    pointer-events: none; 
+    filter: grayscale(1); 
+}
+
+/* ==========================================================================
+   9. BARRA INFERIOR Y TABS
+   ========================================================================== */
+/* BARRA DE ACCIONES SECUNDARIA (COMPACTA) */
+.actions-bar-short {
+    height: 45px;
+    background: #1a1a1a;
+    border-top: 1px solid #333;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 20px;
+    font-size: 0.85rem;
+    color: #bbb;
+    position: relative;
+    cursor: pointer;
+}
+
+/* CENTRADO DE TEXTO EN BARRA DE ACCIONES */
+.actions-bar-short span:nth-child(2) {
+    flex: 1;
+    text-align: center;
+    font-family: var(--f-medium);
+}
+.actions-bar-short .material-icons {
+    font-family: 'Material Icons' !important;
+}
+/* POSICIÓN DEL ICONO FINAL EN BARRA DE ACCIONES */
+.actions-bar-short .material-icons:last-child {
+    position: absolute;
+    right: 20px;
+}
+
+/* BARRA DE NAVEGACIÓN INFERIOR (FOOTER) */
+.bottom-nav-compact { 
+    height: 65px; 
+    background: #000; 
+    border-top: 1px solid #222; 
+    display: flex; 
+    align-items: center; 
+    position: relative; 
+    bottom: 0; 
+    width: 100%; 
+}
+
+/* ELEMENTO DE NAVEGACIÓN (ICONO + TEXTO) */
+.nav-item { 
+    flex: 1; 
+    display: flex; 
+    flex-direction: column; 
+    align-items: center; 
+    gap: 4px; 
+    color: #444; 
+    cursor: pointer; 
+}
+
+/* ESTADO ACTIVO EN NAVEGACIÓN */
+.nav-item.active { 
+    color: #fff; 
+}
+
+/* ESTILO DE ETIQUETA EN NAVEGACIÓN */
+.nav-item span:not(.material-icons) { 
+    font-size: 0.6rem; 
+    font-weight: bold; 
+}
+
+/* CONTENEDOR DE PESTAÑAS (TABS) DEL PANEL */
+.panel-tabs { 
+    display: flex; 
+    justify-content: space-around; 
+    background: #1a1a1a; 
+    border-bottom: 1px solid #333; 
+}
+
+/* PESTAÑA INDIVIDUAL (TAB) */
+.tab { 
+    padding: 12px; 
+    color: #777; 
+    cursor: pointer; 
+    text-align: center; 
+    flex: 1; 
+}
+/* ==========================================================================
+   10. MODALES (TONO, MOVER, CONFIRMAR)
+   ========================================================================== */
+/* CAPA DE FONDO OSCURECIDA (MODAL) */
+.modal-overlay { 
+    position: fixed; 
+    top: 0; 
+    left: 0; 
+    width: 100%; 
+    height: 100%; 
+    background: rgba(0,0,0,0.85); 
+    display: none; 
+    justify-content: center; 
+    align-items: center; 
+    z-index: 99999 !important; 
+}
+
+/* ACTIVACIÓN DE LA VENTANA MODAL */
+.modal-overlay.active { 
+    display: flex; 
+}
+
+/* CONTENEDOR BASE DEL MODAL */
+.modal-content {
+    background: #121212; 
+    border: 1px solid #333; 
+    border-radius: 12px;
+    width: 85%; 
+    max-width: 320px; 
+    position: relative; 
+    box-shadow: 0 10px 40px rgba(0,0,0,0.9);
+}
+
+/* Esto obliga a que el modal de mover use tu color de énfasis */
+#move-modal .modal-content {
+    border: 2px solid var(--accent-color) !important;
+}
+
+/* Esto hace que el título "Mover a:" también combine */
+#move-modal h3 {
+    color: var(--accent-color) !important;
+}
+/* MODAL ESPECÍFICO DE TRANSPORTE (TONO) */
+.transpose-modal { 
+    background: #111; 
+    border: 1px solid #333; 
+    padding-bottom: 10px; 
+    border-radius: 30px; 
+    width: 260px; 
+    overflow: hidden; 
+}
+
+/* ETIQUETA DE TÍTULO DEL MODAL */
+.modal-title { 
+    font-size: 0.65rem; 
+    color: #777; 
+    letter-spacing: 3px; 
+    padding: 12px 0; 
+    text-align: center; 
+}
+
+/* CUERPO INTERNO DEL MODAL */
+.modal-body { 
+    padding: 15px 25px; 
+}
+
+/* FILA DE AJUSTES (LAYOUT FLEX) */
+.fila-ajuste { 
+    display: flex; 
+    justify-content: space-between; 
+    align-items: center; 
+    margin-bottom: 15px; 
+}
+
+/* SELECTOR DE PESTAÑA / TONO */
+.selector-pestaña { 
+    position: relative; 
+    color: var(--accent-color); 
+    display: flex; 
+    align-items: center; 
+    font-weight: bold; 
+}
+
+/* SELECTOR NATIVO OCULTO */
+.selector-pestaña select { 
+    position: absolute; 
+    opacity: 0; 
+    width: 100%; 
+    cursor: pointer; 
+}
+
+/* CONTROLES DE CAPOTRASTE (CAPO) */
+.capo-controls { 
+    display: flex; 
+    align-items: center; 
+    gap: 8px; 
+}
+
+/* BOTÓN CUADRADO DE CAPO */
+.cuadrito-capo { 
+    background: #222; 
+    width: 32px; 
+    height: 32px; 
+    border-radius: 6px; 
+    display: flex; 
+    align-items: center; 
+    justify-content: center; 
+    cursor: pointer; 
+    font-size: 0.8rem; 
+}
+
+/* ESTADO ACTIVO DEL CAPO */
+.cuadrito-capo.activo { 
+    color: var(--accent-color); 
+    border: 1px solid var(--accent-color); 
+}
+
+/* BOTÓN DE ACCIÓN SUELTO (ICONOS) */
+.btn-suelto { 
+    color: #fff; 
+    font-size: 1.5rem; 
+    cursor: pointer; 
+}
+/* ==========================================================================
+   11. VENTANA CREAR CANCIÓN (MODAL FULL)
+   ========================================================================== */
+.create-modal-full {
+    position: fixed; 
+    top: 0; 
+    left: 0; 
+    width: 100vw; 
+    height: 100vh;
+    background: #000 !important; 
+    display: none; 
+    flex-direction: column;
+    transform: translateX(100%); 
+    transition: transform 0.3s ease-in-out; 
+    visibility: hidden;
+}
+
+.create-modal-full.active { 
+    display: flex !important; 
+    transform: translateX(0); 
+    visibility: visible; 
+}
+
+.create-header { 
+    height: 50px; 
+    background: #1a1a1a; 
+    display: flex; 
+    align-items: center; 
+    justify-content: space-between; 
+    padding: 0 15px; 
+    border-bottom: 1px solid #333; 
+}
+
+/* Fuerza el color de énfasis a la flecha, el título y el botón guardar */
+.create-header .material-icons,
+.create-header .panel-title-text {
+    color: var(--accent-color) !important;
+}
+
+.create-body-new { 
+    flex: 1; 
+    display: flex; 
+    flex-direction: column; 
+    padding: 10px 15px; 
+    gap: 2px; 
+    background: #000; 
+}
+
+.label-mini { 
+    font-size: 0.65rem; 
+    color: #666; 
+    margin-top: 5px; 
+    text-transform: uppercase; 
+}
+
+.box-input { 
+    border: 1px solid #333; 
+    border-radius: 4px; 
+    padding: 5px 10px; 
+    background: #111; 
+}
+
+.box-input input { 
+    width: 100%; 
+    background: transparent; 
+    border: none; 
+    color: #fff; 
+    font-size: 0.9rem; 
+    outline: none; 
+}
+
+.box-tone { 
+    width: 50px; 
+    height: 35px; 
+    border: 1px solid #333; 
+    background: #111; 
+    display: flex; 
+    align-items: center; 
+    justify-content: center; 
+}
+
+.box-tone input { 
+    width: 100%; 
+    text-align: center; 
+    background: transparent; 
+    border: none; 
+    color: var(--accent-color); 
+    font-weight: bold; 
+    outline: none; 
+}
+.btn-t { 
+    background: #222; 
+    border: 1px solid #444; 
+    color: #fff; 
+    padding: 5px 8px; 
+    font-size: 0.6rem; 
+    border-radius: 3px; 
+    cursor: pointer; 
+}
+/* Barra de herramientas con más aire */
+.bar-tools { 
+    display: flex; 
+    align-items: center; 
+    gap: 8px; 
+    margin: 12px 0; 
+}
+
+/* Analizador ahora en una sola fila (In-Line) */
+.analizador-container { 
+    flex: 1; 
+    display: flex; 
+    flex-direction: row; /* Alineación horizontal */
+    align-items: center; 
+    justify-content: space-between; 
+    background: #111; 
+    border-radius: 8px; 
+    padding: 0 15px; 
+    height: 38px; /* Misma altura que los botones */
+    border: 1px solid #333; 
+    overflow: hidden;
+}
+
+.tonalidad-header { 
+    color: #888; 
+    font-size: 0.85rem; /* Tamaño normal */
+    font-family: var(--f-bold);
+    border-bottom: none !important; /* Quitamos la línea divisoria */
+    margin-bottom: 0; 
+    text-transform: uppercase; 
+    white-space: nowrap;
+}
+
+.notas-footer { 
+    color: var(--accent-color); 
+    font-size: 0.65rem; /* Mismo tamaño que el botón instrucciones */
+    font-family: var(--f-bold); /* Misma fuente gruesa */
+    white-space: nowrap; 
+    overflow: hidden; 
+    text-overflow: ellipsis;
+    text-transform: none !important; /* 🔥 FIX: Permite que la "m" minúscula se vea (Ej: Am, Dm) */
+}
+
+.editor-full-frame { 
+    flex: 1; 
+    display: flex; 
+    margin-bottom: 10px; 
+    min-height: 60%; 
+}
+
+/* ==========================================================================
+   ACTUALIZA ESTO EN LA SECCIÓN 11 (CREAR CANCIÓN)
+   ========================================================================== */
+.editor-full-frame textarea {
+    width: 100%; 
+    height: 100%; 
+    background: #080808; 
+    color: #ffffff !important; 
+    border: 1px solid #333;
+    border-radius: 8px; 
+    padding: 15px; 
+    
+    /* 🚨 LA MAGIA: Esto hace que todos los espacios midan lo mismo al editar */
+    font-family: 'Lucida Console', 'Monaco', monospace !important;
+    font-size: 14px !important; 
+    
+    white-space: pre !important; 
+    overflow-x: auto !important;
+    
+    resize: none; 
+    outline: none; 
+    line-height: 1.5;
+    scroll-behavior: smooth; 
+    padding-bottom: 50px;
+}
+
+.linea-contenido {
+    display: block !important;
+}
+
+/* ==========================================================================
+   12. ESTADOS DE SELECCIÓN Y UNIFICACIÓN (APK STYLE)
+   ========================================================================== */
+/* Estado de espera (iluminado sólido) solo para Carpetas */
+.modo-seleccion-carpetas .folder-item { 
+    border-left: 4px solid var(--accent-color) !important; 
+    transition: all 0.2s ease; 
+}
+
+/* ELIMINAMOS EL COLOR FIJO Y USAMOS TU ENFASIS */
+.song-item.selected, 
+.folder-item.selected {
+    /* Toma tu color de énfasis y lo vuelve 15% transparente automáticamente */
+    background-color: color-mix(in srgb, var(--accent-color) 15%, transparent) !important;
+    
+    /* El borde izquierdo ahora siempre combinará con tus iconos */
+    border-left: 6px solid var(--accent-color) !important;
+}
+
+/* Efecto suave al pasar el dedo o el mouse */
+.song-item:active {
+    background-color: color-mix(in srgb, var(--accent-color) 10%, transparent) !important;
+}
+
+.s-name, 
+.f-name {
+    font-family: var(--f-medium) !important;
+    font-size: 1rem !important;
+    color: var(--lyrics-color) !important;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.s-author, 
+.f-count {
+    font-family: var(--f-medium) !important;
+    font-size: 0.8rem !important;
+    color: #888888 !important;
+    margin-top: 2px;
+}
+/* --- BOTONES CRISTALINOS DINÁMICOS --- */
+
+/* Estado Activo para Metrónomo y Play */
+#metroBtn.activo-red, 
+#scrollBtn.activo-scroll {
+    border-color: var(--accent-color) !important;
+    background: color-mix(in srgb, var(--accent-color) 20%, rgba(255, 255, 255, 0.1)) !important;
+    box-shadow: 0 0 20px color-mix(in srgb, var(--accent-color) 40%, transparent) !important;
+    transition: all 0.3s ease;
+}
+
+/* Icono del Metrónomo (Efecto de luz) */
+.metro-luz-activa {
+    filter: drop-shadow(0 0 8px var(--accent-color)) brightness(1.2) !important;
+    opacity: 1 !important;
+}
+
+/* El icono de Play/Pause también debe brillar */
+#scrollBtn.activo-scroll .material-icons {
+    color: var(--accent-color) !important;
+    text-shadow: 0 0 10px var(--accent-color);
+}
+.selected .material-icons, 
+.selected .folder-icon-gris,
+.selected .material-icons:first-child {
+    color: var(--accent-color) !important;
+}
+
+/* ==========================================================================
+   13. ANIMACIONES Y OTROS
+   ========================================================================== */
+@keyframes menuFadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.dots-btn {
+    background: transparent !important;
+    border: none !important;
+    outline: none !important;
+    box-shadow: none !important;
+    -webkit-tap-highlight-color: transparent;
+    color: #666 !important;
+	margin-right: 0px !important;
+}
+
+.dots-btn:active, 
+.dots-btn:hover {
+    color: #999 !important;
+    background: transparent !important;
+    outline: none !important;
+}
+
+.dots-btn .material-icons {
+    font-size: 20px;
+    color: inherit;
+}
+
+/* ==========================================================================
+   14. LÓGICA DE PESTAÑAS Y ALINEACIÓN APK
+   ========================================================================== */
+.menu-icon-large { 
+    font-size: 1.8rem !important; 
+    color: var(--accent-color) !important; 
+    cursor: pointer; 
+}
+
+#tab-songs.active .material-icons,
+#tab-folders.active .material-icons {
+    color: var(--accent-color) !important;
+}
+
+.song-item, .folder-item {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    padding: 12px 0px 12px 2px !important; 
+	padding-right: 2px !important; /* Un micro-borde para que no se vea cortado */
+    width: 100%;
+    border-bottom: 1px solid #111;
+    background-color: transparent;
+    transition: 0.2s;
+    border-left: 0px solid transparent;
+    box-sizing: border-box;
+}
+
+.song-item .material-icons:first-child, 
+.folder-item .material-icons:first-child {
+    margin-left: 0 !important;
+    margin-right: 15px !important;
+    padding-left: 0 !important;
+}
+
+/* ==========================================================================
+   15. VENTANA DE CONFIGURACIÓN MAESTRA (FULL SCREEN MÓVIL)
+   ========================================================================== */
+.config-window {
+    width: 100%; 
+    height: 100%;
+    background: #121212;
+    display: flex; 
+    flex-direction: column;
+    border-radius: 0; /* Al ser pantalla completa, le quitamos los bordes redondos */
+    overflow: hidden;
+}
+
+.config-header {
+    height: 60px;
+    background: #1a1a1a;
+    display: flex; 
+    align-items: center; 
+    padding: 0 20px;
+    gap: 20px; 
+    border-bottom: 1px solid #333;
+}
+
+/* Esto pinta la flecha de retroceso y el título "Ajustes" */
+.config-header .material-icons,
+.config-header .panel-title-text {
+    color: var(--accent-color) !important;
+}
+
+.config-container {
+    display: flex;
+    flex: 1;
+    height: calc(100% - 60px);
+    overflow: hidden; 
+}
+
+/* --- MENÚ LATERAL AHORA ES MENÚ PRINCIPAL (100% ANCHO) --- */
+.config-sidebar {
+    width: 100%; 
+    background: #121212;
+    border-right: none;
+    padding-top: 0;
+    overflow-y: auto;
+}
+
+.side-item {
+    padding: 22px 25px;
+    font-family: var(--f-medium) !important;
+    font-size: 1.1rem; 
+    color: #fff;
+    cursor: pointer; 
+    border-bottom: 1px solid #222;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: background 0.2s;
+}
+
+/* Flechita > a la derecha para indicar que puedes entrar */
+.side-item::after {
+    content: "chevron_right";
+    font-family: 'Material Icons';
+    color: #555;
+    font-size: 1.5rem;
+}
+
+.side-item:active {
+    background: #222;
+}
+
+/* Ocultamos el color verde de selección porque ahora navegaremos dentro */
+.side-item.active {
+    color: #fff !important;
+    background: transparent;
+}
+.side-item.active::after {
+    color: #555;
+}
+
+/* --- CONTENIDO DE LA OPCIÓN (100% ANCHO, OCULTO POR DEFECTO) --- */
+.config-content {
+    width: 100%; 
+    display: none; /* Se oculta hasta que elijas una opción */
+    padding: 25px 20px;
+    background: #121212;
+    height: 100%;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch;
+}
+
+/* ==========================================================================
+   16. ELEMENTOS DE INTERFAZ DE AJUSTES
+   ========================================================================== */
+/* ======================= GENERAL ======================= */
+/* configuracion de ventana fuente, estilos, color , etc. */
+.section-title {
+    font-family: var(--f-bold) !important;
+    font-size: 0.95rem !important; /* Un poco más pequeño para que sea fino */
+    color: #ffffff;
+    text-transform: none; /* Quitamos las mayúsculas para un look más moderno */
+    margin-top: 20px;
+    margin-bottom: 10px;
+    letter-spacing: 0.5px;
+}
+.flex-between { 
+    justify-content: space-between; 
+    width: 100%; 
+}
+
+.icon-text-gap { 
+    display: flex; 
+    align-items: center; 
+    gap: 10px; 
+}
+.radio-container {
+    display: flex; 
+    align-items: center; 
+    position: relative;
+    padding-left: 35px; 
+    cursor: pointer; 
+    font-family: var(--f-medium); 
+    font-size: 0.95rem;
+}
+.radio-container input { 
+    position: absolute; 
+    opacity: 0; 
+}
+/* Crea las Lineas divosorias */
+.divisor-p { 
+    height: 1px; 
+    background: #333; 
+    margin: 30px 0; 
+}
+/* ------------- Enfasis de Color ----------- */
+.color-preview-circle { 
+    width: 35px; 
+    height: 35px; 
+    border-radius: 50%; 
+    border: 2px solid #333; 
+}
+
+/* ------------- TEMAS ----------- */
+.radio-mark {
+    position: absolute; 
+    left: 0; 
+    height: 20px; 
+    width: 20px;
+    background-color: transparent; 
+    border: 2px solid #888; 
+    border-radius: 50%;
+}
+.radio-container input:checked ~ .radio-mark { 
+    border-color: var(--accent-color) !important; 
+}
+.radio-container input:checked ~ .radio-mark:after {
+    content: ""; 
+    position: absolute; 
+    display: block;
+    top: 3px; 
+    left: 3px; 
+    width: 10px; 
+    height: 10px;
+    border-radius: 50%; 
+    background: var(--accent-color);
+}
+/* ------------- Cifrado de Acordes ----------- */
+/* Selectores/pestañas, forma, estilo, color, etc. (de todos) */
+.select-wrapper {
+    position: relative; 
+    width: 100%; 
+    border-bottom: 1px solid #555; 
+    margin-bottom: 10px;
+}
+
+.select-wrapper select {
+    width: 100%; 
+    background: transparent; 
+    border: none; 
+    color: #fff;
+    padding: 8px 0; 
+    font-family: var(--f-medium); 
+    font-size: 1rem;
+    appearance: none; 
+    outline: none;
+}
+
+.select-wrapper .material-icons {
+    position: absolute; 
+    right: 0; 
+    top: 8px; 
+    color: #888; 
+    pointer-events: none;
+}
+/* ======================= PERSONALIZADO ======================= */
+
+/* Organizador de filas - arriba y abajo (hace la separacion)*/
+.config-option-row { 
+    padding: 10px 0; 
+    display: flex; 
+    align-items: center; 
+}
+/* Botones, forma, estilo, color, etc. "N" - "/"- "=" */
+.btn-estilo, .btn-p {
+    background: #333; 
+    border: 1px solid #444; 
+    color: #fff;
+    width: 40px; 
+    height: 38px; 
+    border-radius: 6px;
+    cursor: pointer;
+    display: flex; 
+    align-items: center; 
+    justify-content: center;
+}
+.btn-estilo.activo, .btn-p.activo {    /* ESTO ACTIVA O DESACTIVA LOS 3 BOTONES */
+    background: var(--accent-color) !important; 
+    color: #000 !important; 
+    border-color: var(--accent-color) !important; 
+}
+.config-content input[type="range"],
+.slider-verde,
+.custom-slider {
+    width: 100%;
+    height: 6px;
+    margin: 10px 0 15px 0;
+    accent-color: var(--accent-color) !important;
+    color-scheme: dark !important;
+    background: transparent !important;
+    border: none !important;
+    outline: none !important;
+    pointer-events: none !important; 
+}
+input[type="range"]::-webkit-slider-thumb {
+    pointer-events: auto !important;
+    cursor: grab !important;
+}
+
+.num-verde { 
+    color: var(--accent-color) !important; 
+    font-weight: bold; 
+    margin-left: 5px; 
+}
+/* -------------- METADATOS -------------------*/
+.label-lateral {
+    color: #ffffff;
+    font-size: 0.9rem;
+    margin-right: 5px;
+    padding-bottom: 5px; /* Alinea con la base de la línea */
+}
+
+.tool-row-p {
+    display: flex;
+    align-items: flex-end; /* Clave para que todo se apoye en la línea */
+    gap: 10px;
+    width: 100%;
+}
+/* -------------- ESTRUCTURA -------------------*/
+
+.est-actions .material-icons { 
+    font-size: 1.1rem; 
+    cursor: pointer; 
+}
+/* -------------- ENCABEZADOS -------------------*/
+/* Switch encendido y apagado */
+input:checked + .sw-slider { 
+    background: var(--accent-color) !important; 
+}
+
+input:checked + .sw-slider:before { 
+    transform: translateX(22px); 
+}
+.sw-v { 
+    position: relative; 
+    width: 44px; 
+    height: 22px; 
+    display: inline-block; 
+}
+
+.sw-v input { 
+    opacity: 0; 
+    width: 0; 
+    height: 0; 
+}
+
+.sw-slider { 
+    position: absolute; 
+    top: 0; 
+    left: 0; 
+    right: 0; 
+    bottom: 0; 
+    background: #444; 
+    border-radius: 34px; 
+    cursor: pointer; 
+}
+.sw-slider:before { 
+    position: absolute; 
+    content: ""; 
+    height: 16px; 
+    width: 16px; 
+    left: 3px; 
+    bottom: 3px; 
+    background: white; 
+    transition: .4s; 
+    border-radius: 50%; 
+}
+/* Pestaña "Por defecto:" */
+.label-p-header { /* nombres: "color" y "color de resaltado"*/
+    font-size: 0.85rem; 
+    color: #fff; 
+    margin-bottom: 4px; 
+    font-family: var(--f-medium); 
+}.row-p-selects { /* Este código coloca los nombres "Color" y el "Color de resaltado" uno al lado del otro:*/
+    display: flex; 
+    gap: 15px; 
+    margin-top: 10px; 
+}
+.col-p { 
+    flex: 1; 
+    display: flex; 
+    flex-direction: column; 
+}
+.select-box-p {   /* Esto es lo que crea el rectángulo oscuro con el borde abajo */
+    position: relative;
+    background: #1a1a1a; /* Gris muy oscuro para evitar el lag de brillo */
+    border-radius: 4px;
+    border-bottom: 1px solid #444; /* Línea fina */
+    padding: 2px 8px;
+    transition: border-color 0.2s;
+}
+.select-box-p:hover {
+    border-bottom-color: var(--accent-color); /* Brillo verde sutil al pasar el mouse */
+}
+
+.select-box-p select {
+    width: 100%;
+    background: transparent;
+    border: none;
+    color: #fff;
+    font-size: 0.9rem;
+    appearance: none;
+    outline: none;
+    padding: 8px 0;
+    cursor: pointer;
+}
+/* --- ELIMINAR FONDO BLANCO Y LAG --- */
+select option {
+    background-color: #1a1a1a !important; /* Fondo oscuro en la lista */
+    color: #fff !important;
+}
+.select-box-p .material-icons {   /* forma de la pestañita, el triangulo */
+    position: absolute; 
+    right: 5px; 
+    top: 50%; 
+    transform: translateY(-50%);
+    font-size: 1.2rem; 
+    color: #888; 
+    pointer-events: none;
+}
+
+
+/* BOTONES POR SEGMENTOS - CERO LAG */
+/* Contenedor tipo pastilla */
+.segment-control {
+    display: flex;
+    background: #111; /* Negro sólido */
+    border: 1px solid #333;
+    border-radius: 8px;
+    padding: 3px;
+    width: 100%;
+}
+
+/* Cada opción */
+.segment-item {
+    flex: 1;
+    text-align: center;
+    padding: 8px 2px;
+    color: #888;
+    font-size: 0.8rem;
+    cursor: pointer;
+    border-radius: 6px;
+    transition: none !important; /* MATA EL LAG */
+}
+
+/* Opción seleccionada */
+.segment-item.active {
+    background: #333; /* Gris oscuro sólido */
+    color: var(--accent-color);   /* Tu verde de siempre */
+    font-weight: bold;
+}
+/* Contenedor en cuadrícula para muchas opciones */
+.segment-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr); /* 3 columnas iguales */
+    gap: 6px;
+    background: #111;
+    border: 1px solid #333;
+    border-radius: 8px;
+    padding: 6px;
+    width: 100%;
+}
+
+/* Reutilizamos el estilo del item pero ajustado a la rejilla */
+.segment-grid .segment-item {
+    text-align: center;
+    padding: 10px 2px;
+    color: #888;
+    font-size: 0.75rem; /* Un poco más pequeña para que quepan nombres largos */
+    cursor: pointer;
+    border-radius: 6px;
+    font-family: var(--f-medium);
+    transition: none !important;
+}
+
+/* Estado activo */
+.segment-grid .segment-item.active {
+    background: #333;
+    color: var(--accent-color);
+    font-family: var(--f-bold);
+}
+
+
+
+
+/* --------------- FONDO ----------------- */
+.bg-box-preview {
+    width: 80px;
+    height: 80px;
+    background: #000;
+    border: 1px solid #555;
+    margin: 20px auto;
+    cursor: pointer;
+}
+/* ==========================================================================
+   17. DISEÑO DE SELECTORES Y ESTRUCTURA (AJUSTES)
+   ========================================================================== */
+
+
+
+
+/* --- DISEÑO DE ESTRUCTURA --- */
+.est-item { 
+    margin-bottom: 25px; 
+    padding-right: 5px; 
+}
+
+.est-top { 
+    display: flex; 
+    justify-content: space-between; 
+    align-items: center; 
+    margin-bottom: 5px; 
+}
+
+.est-name { 
+    font-size: 1.1rem; 
+    color: #fff; 
+    font-family: var(--f-medium); 
+}
+
+.est-actions { 
+    display: flex; 
+    gap: 12px; 
+    color: #fff; 
+}
+
+
+
+.est-controls { 
+    display: flex; 
+    align-items: flex-end; 
+    gap: 10px; 
+}
+
+.est-btns-group { 
+    display: flex; 
+    gap: 6px; 
+}
+
+.add-more-btn { 
+    color: #fff; 
+    font-family: var(--f-bold); 
+    font-size: 0.9rem; 
+    display: flex; 
+    align-items: center; 
+    gap: 5px; 
+    cursor: pointer; 
+    margin-top: 10px; 
+}
+
+/* ==========================================================================
+   18. COPIA DE SEGURIDAD Y DIAGRAMAS
+   ========================================================================== */
+.btn-gris-grande {
+    background: #333; 
+    color: #fff; 
+    border: none; 
+    padding: 14px 20px; 
+    border-radius: 8px; 
+    font-family: var(--f-medium); 
+    font-size: 0.95rem; 
+    cursor: pointer;
+    text-align: left;
+    width: 100%;
+    transition: background 0.2s;
+}
+
+.btn-gris-grande:active { 
+    background: #444; 
+}
+/* ==========================================================================
+   19. MODAL DE TONO Y METRÓNOMO (VERDE CHORD)
+   ========================================================================== */
+.transpose-modal .modal-title {
+    font-size: 0.65rem;
+    padding: 10px 0 !important;
+    color: #777;
+    letter-spacing: 3px;
+    text-align: center;
+}
+
+/* Animación y Estado del Metrónomo */
+.metro-luz-activa {
+    filter: drop-shadow(0 0 10px var(--accent-color)) brightness(1.5) !important;
+    opacity: 1 !important;
+}
+
+/* ==========================================================================
+   DINÁMICA GLOBAL DEL METRÓNOMO (PULSO DE COLOR ENTERO)
+   ========================================================================== */
+
+/* 1. Estado Activo (Metrónomo encendido pero entre golpes) */
+#metroBtn.activo-red {
+    /* Fondo con un toque sutil del color de énfasis */
+    background-color: color-mix(in srgb, var(--accent-color) 20%, transparent) !important;
+    border-color: var(--accent-color) !important;
+    transition: background-color 0.15s ease; /* Desvanecimiento suave después del golpe */
+}
+
+/* El dibujo del metrónomo se mantiene tenue entre golpes */
+#metroBtn.activo-red #metroIcon {
+    opacity: 0.5;
+    filter: brightness(1);
+}
+
+/* 2. 🔥 EL "BEEP" VISUAL (FLASH COMPLETO EN EL PULSO) 🔥 */
+/* Cuando el JS activa la clase .metro-luz-activa, el botón se llena al 100% */
+#metroBtn.activo-red:has(.metro-luz-activa) {
+    background-color: var(--accent-color) !important; /* Llenado total del color */
+    box-shadow: 0 0 25px color-mix(in srgb, var(--accent-color) 60%, transparent) !important;
+    transition: none !important; /* El golpe de color debe ser instantáneo y seco */
+}
+
+/* En el instante del pulso, el icono brilla intensamente */
+#metroBtn.activo-red:has(.metro-luz-activa) #metroIcon {
+    opacity: 1 !important;
+    filter: brightness(2) !important;
+    transform: scale(1.1); /* Micro-salto para dar más sensación de golpe */
+}
+
+/* El destello de luz también debe seguir tu color */
+.metro-luz-activa {
+    filter: drop-shadow(0 0 10px var(--accent-color)) brightness(1.5) !important;
+    opacity: 1 !important;
+}
+/* EFECTO DE LUZ GLOBAL PARA LA CÁPSULA */
+.floating-controls.dynamic-island.metro-flash-global {
+    /* El fondo se ilumina con tu color de acento al 40% */
+    background-color: color-mix(in srgb, var(--accent-color) 40%, rgba(255, 255, 255, 0.2)) !important;
+    
+    /* Resplandor exterior (Glow) */
+    box-shadow: 0 0 30px color-mix(in srgb, var(--accent-color) 60%, transparent) !important;
+    
+    /* Los bordes brillan */
+    border-color: var(--accent-color) !important;
+    
+    /* Micro-impacto visual */
+    transform: translateX(-50%) scale(1.02); 
+    
+    transition: none !important; /* El golpe debe ser instantáneo */
+}
+
+/* Opcional: Que los iconos dentro de la cápsula también brillen en blanco durante el golpe */
+.metro-flash-global .cap-btn, 
+.metro-flash-global .material-icons,
+.metro-flash-global .reset-btn {
+    color: #ffffff !important;
+    text-shadow: 0 0 10px rgba(255, 255, 255, 0.8);
+    transition: none !important;
+}
+/* Controles de Tono */
+.tone-main-controls { 
+    display: flex; 
+    align-items: center; 
+    justify-content: center; 
+    gap: 15px; 
+    margin-bottom: 15px; 
+}
+
+.btn-modal-round {
+    background: rgba(255,255,255,0.1);
+    border: 1px solid #444;
+    color: white;
+    border-radius: 50%;
+    width: 36px; 
+    height: 36px;
+    font-size: 1.2rem;
+    cursor: pointer;
+    display: flex; 
+    align-items: center; 
+    justify-content: center;
+}
+
+.btn-modal-round:active { 
+    background: var(--accent-color); 
+    color: black; 
+}
+
+.display-grande {
+    font-size: 2.2rem;
+    text-align: center;
+    color: var(--accent-color);
+    font-family: var(--f-bold);
+    min-width: 80px;
+}
+
+.divisor-modal { 
+    height: 1px; 
+    background: #333; 
+    margin: 10px 0; 
+}
+
+.input-bpm-modal {
+    background: #111;
+    border: 1px solid #333;
+    color: var(--accent-color);
+    width: 55px;
+    text-align: center;
+    border-radius: 6px;
+    font-family: var(--f-bold);
+    outline: none;
+    height: 32px;
+}
+
+.modal-footer-options {
+    display: flex; 
+    justify-content: space-around;
+    padding-top: 12px; 
+    border-top: 1px solid #222; 
+    margin-top: 10px;
+}
+
+.check-label {
+    color: #888; 
+    font-size: 0.75rem;
+    display: flex; 
+    align-items: center; 
+    gap: 6px; 
+    cursor: pointer;
+}
+
+.check-label input { 
+    accent-color: var(--accent-color); 
+}
+/* ==========================================================================
+   20. MENÚ DE OPCIONES INDIVIDUALES (TRES PUNTITOS)
+   ========================================================================== */
+.song-item {
+    position: relative; /* Crucial para que el menú no flote "afuera" */
+}
+
+/* --- MENÚ DE OPCIONES INDIVIDUALES (MODERNIZADO) --- */
+.options-menu {
+    display: none; 
+    position: absolute; 
+    right: 10px; 
+    top: 35px; 
+    background: #1a1a1a; 
+    border: 1px solid #333; 
+    border-radius: 12px; 
+    /* Z-index alto para estar sobre el escudo de cierre (8500) */
+    z-index: 10000; 
+    min-width: 180px; 
+    box-shadow: 0 8px 25px rgba(0,0,0,0.8);
+    overflow: hidden;
+    user-select: none;
+}
+/* Busca el ID o Clase de la ventanita que aparece al presionar los 3 puntos */
+.menu-desplegable-cancion { 
+    position: absolute;
+    /* Debe ser mayor que los 9000 de los puntos para que no haya duda */
+    z-index: 10000 !important; 
+}
+
+.options-menu.active { 
+    display: block !important; 
+    /* Añadimos la animación que ya tienes definida al final de tu CSS */
+    animation: menuFadeIn 0.2s ease-out;
+}
+
+/* Ajuste para que los iconos dentro del menú se vean finos */
+.options-menu .menu-item {
+    padding: 12px 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 0.9rem;
+    color: #eee;
+    border-bottom: 1px solid #222;
+}
+
+.options-menu .menu-item:last-child {
+    border-bottom: none;
+}
+
+/* ==========================================================================
+   21. SECCIONES FINALES DE AJUSTES (DIAGRAMAS Y AVANZADO)
+   ========================================================================== */
+#section-diagramas, 
+#section-avanzado, 
+#section-acerca {
+    padding-bottom: 100px; /* Espacio para no chocar con controles flotantes */
+}
+
+.bg-box-preview {
+    border: 2px solid var(--accent-color);
+    box-shadow: 0 0 10px rgba(76, 175, 80, 0.2);
+}
+
+.v-label { 
+    display: block; 
+    color: #555; 
+    margin: 25px 0 5px 0; 
+    font-size: 0.75em; 
+    letter-spacing: 2px; 
+    text-transform: uppercase;
+    font-family: var(--f-bold); 
+}
+
+
+/* Color para los Títulos (Intro, Coro, etc) */
+/* Contenedor de sección (Coro, Estrofa, etc.) */
+.bloque-coro, .bloque-seccion-general {
+    display: block;
+    width: 100%;
+    margin-bottom: 0px; /* Reducimos el espacio al final de todo el bloque */
+}
+
+/* El Título (Encabezado) */
+/* 2. Estrechamos el encabezado */
+/* Unificación de Encabezados (Intro, Coro, Estrofa, etc.) */
+/* 2. ENCABEZADOS (Intro, Coro, etc.) */
+.linea-encabezado, 
+.linea-encabezado-txt {
+    font-size: calc(var(--header-font-size, 15px) * var(--zoom-level, 1)) !important;
+    display: inline-block !important;
+    color: var(--structure-color, #888888) !important;
+    font-family: var(--f-bold);
+    padding-top: 0px !important;     /* Parche: 0 espacios extra arriba */
+    margin-bottom: 0px !important;   /* Parche: 0 espacios extra abajo */
+    line-height: var(--user-line-height, 1.6) !important;
+    padding-bottom: 0px !important;
+	width: auto !important; /* Asegura que no se estire al 100% */
+}
+/* 3. Evitamos que las líneas de acordes o letra empujen hacia arriba */
+/* 1. Ajuste para líneas generales */
+.linea-acorde, .linea-contenido, .linea-letra-normal {
+    margin-top: 0 !important;
+    padding-top: 0 !important;
+    /* Cambiado de 1.6 a 1.2 para eliminar el hueco */
+    line-height: var(--user-line-height, 1.6) !important; 
+}
+
+/* 2. Ajuste específico para la Letra normal */
+.linea-letra-normal {
+    color: var(--lyrics-color, #ffffff) !important;
+    display: block;
+    /* Cambiado de 1.6 a 1.2 para que no empuje los acordes */
+    line-height: var(--user-line-height, 1.6) !important; 
+}
+/* Clase para ocultar encabezados y su espacio */
+.ocultar-encabezado {
+    display: none !important;
+}
+body.encabezados-apagados .linea-encabezado, 
+body.encabezados-apagados .linea-encabezado-txt,
+body.encabezados-apagados .bloque-seccion-general {
+    display: none !important;
+    margin-bottom: 0px !important;
+    padding-top: 0px !important;
+}
+/* Esto hace que el encabezado desaparezca y no ocupe espacio */
+.ocultar-elemento {
+    display: none !important;
+}
+/* Estilo para los círculos de la paleta de énfasis */
+.color-dot {
+    transition: transform 0.2s ease, border 0.2s ease;
+    border: 2px solid transparent;
+}
+
+/* Feedback táctil para la paleta de colores */
+.color-dot:active {
+    transform: scale(1.2); /* Se agranda un poco al tocarlo */
+    border-color: #fff !important; /* Brilla en blanco al seleccionarlo */
+    transition: transform 0.1s;
+}
+
+/* Asegura que el color de énfasis afecte a los iconos y badges */
+.menu-icon-large, .num-verde, .song-key-badge, .key-badge {
+    color: var(--accent-color) !important;
+}
+
+.activo-red, .btn-p.activo, .sw-slider {
+    background-color: var(--accent-color) !important;
+}
+/* Estilo específico para el menú de Importar */
+#import-options-menu {
+    display: none;
+}
+
+#import-options-menu.active {
+    display: block !important;
+}
+
+/* El escudo debe estar por debajo de los menús pero por encima del contenido */
+/* ==========================================================================
+   UNIFICACIÓN DE CAPAS (Z-INDEX) - SOLUCIÓN DE ERRORES DE CLIC
+   ========================================================================== */
+
+/* 2. El Escudo Invisible (El telón que detecta el clic para cerrar) */
+#escudo-cierre {
+    display: none; 
+    position: fixed; 
+    top: 0; left: 0;
+    width: 100vw; height: 100vh;
+    background: transparent; /* Invisible para el usuario */
+    z-index: 8500 !important; /* Por debajo del menú (9000) */
+}
+
+/* 3. Todos los Menús Flotantes (3 puntos e Importar) */
+.options-menu, 
+.bulk-menu-up {
+    z-index: 9000 !important; /* Siempre visibles sobre el escudo */
+}
+
+/* 4. Modales de Ajuste (Tono, Configuración, Confirmación) */
+/* 1. Ventana de Crear Canción (Fondo de todo) */
+.create-modal-full {
+    z-index: 9000 !important; 
+}
+
+/* 2. Ventana de Ajustes / Personalización */
+.config-window {
+    z-index: 10000 !important; 
+}
+
+
+#modal-dinamico {
+    z-index: 999999 !important; /* AHORA SÍ, por encima de todo en la galaxia */
+}
+/* Clases para Personalización Dinámica */
+.texto-negrita { font-family: var(--f-bold) !important; font-weight: 800 !important; }
+.texto-cursiva { font-style: italic !important; }
+
+/* Clase para mover a la derecha (Diferenciar Coro) */
+.mover-derecha { 
+    margin-left: 30px !important; 
+    border-left: 2px solid var(--accent-color); /* Una línea sutil para diferenciar */
+    padding-left: 10px;
+}
+/* Regla para que el paréntesis sea fino y no moleste */
+.parentesis-regla {
+    font-family: var(--f-medium) !important; /* Inter Medium */
+    font-style: italic !important;           /* Cursiva */
+    color: #888888 !important;               /* Gris suave */
+    font-weight: 500 !important;             /* Peso Medium */
+    opacity: 0.8;
+}
+/* Alineación quirúrgica para los iconos */
+/* 1. Expandimos el espacio para que estén seguros */
+#iconos-bulk-reemplazo {
+    display: none; 
+    width: 100% !important; 
+    margin: 0 auto !important;
+    /* Empuja el icono de compartir a la izq, mover al centro, borrar a la der */
+    justify-content: space-between !important; 
+    /* Este es tu escudo: 30px de separación para alejar el basurero de los 3 puntos */
+    padding: 0 30px !important; 
+}
+
+/* 2. Ajuste fino de cada icono */
+#iconos-bulk-reemplazo .material-icons,
+#iconos-bulk-carpetas .material-icons {
+    font-family: 'Material Icons' !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    width: 28px !important; 
+    height: 28px !important;
+    line-height: 1 !important;
+    text-transform: none !important;
+}
+/* Clase nueva: Voltea el menú hacia arriba */
+.options-menu.subir {
+    top: auto !important;   /* Anula el top: 35px */
+    bottom: 35px !important; /* Lo posiciona arriba de los puntos */
+}
+/* Estilo para la enumeración extrema izquierda */
+.song-number {
+    font-family: var(--f-medium);
+    font-size: 0.65rem;
+    color: #444; /* Gris oscuro muy sutil */
+    min-width: 20px;
+    margin-right: 5px;
+    text-align: left;
+    user-select: none;
+}
+
+/* Cuando la canción está seleccionada, el número brilla un poco más */
+.selected .song-number {
+    color: var(--accent-color);
+    opacity: 0.6;
+}
+
+/* Ajuste para que la lista no se vea apretada */
+.song-item {
+    padding-left: 10px !important;
+}
+/* --- VISOR DE PDF --- */
+/* Ocultar encabezado de info (Título grande/Artista/Tono) solo en modo visual */
+.modo-visual-activo .song-info-header {
+    display: none !important;
+}
+
+/* ==========================================================================
+   VISOR DE CANCIONES (Consolidado)
+   ========================================================================== */
+.song-viewer {
+    display: block;
+    width: 100%;
+    padding-top: 50px; /* Espacio para que la Top Bar no tape el título */
+    overflow-x: hidden;
+    transition: background 0.3s;
+}
+
+/* Solo si en el futuro decides que el modo visual (PDF/IMG) 
+   necesite un padding diferente, usarías esto: */
+.modo-visual-activo .song-viewer {
+    padding-top: 50px !important; 
+}
+/* --- SISTEMA DE CARRUSEL (RIEL) --- */
+.lyrics-wrapper {
+    width: 100%;
+    overflow-x: hidden; /* Evita scroll de navegador */
+    touch-action: pan-y pinch-zoom; /* Permite scroll vertical y zoom, pero controlamos el horizontal por JS */
+    position: relative;
+}
+
+#carousel-rail.lyrics-container {
+    display: flex !important;
+    flex-direction: row !important;
+    flex-wrap: nowrap !important;
+    align-items: flex-start !important;
+    width: fit-content !important;
+}
+/* Permitimos zoom libre en toda la app */
+.lyrics-wrapper, .song-slide, .song-viewer pre, .lyrics-container {
+    touch-action: auto !important; 
+    user-select: auto;
+    -webkit-user-drag: none;
+}
+/* ==========================================================================
+   SISTEMA DE CARRUSEL - ALINEACIÓN Y CENTRADO
+   ========================================================================== */
+
+.song-slide {
+    width: 100vw !important; 
+    height: auto !important; /* 🚨 CAMBIO: Pasa de 100vh a auto para que el slide crezca con la canción */
+    flex-shrink: 0 !important; 
+    
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    
+    padding-top: 0px !important; /* 🚨 CAMBIO: Pasa de 10px a 0px para matar el doble espacio debajo del header */
+    padding-left: 15px; 
+    padding-bottom: 180px;
+    
+    overflow-y: visible !important; /* 🚨 CAMBIO: Pasa de auto a visible para que la página entera scrollee, no solo el cuadro */
+    overflow-x: auto !important; 
+
+    scroll-behavior: smooth;
+    -webkit-overflow-scrolling: touch;
+}
+
+/* Ajuste para que el pre no rompa el carrusel y mantenga el estilo Songbook */
+.song-slide pre {
+    /* Mantenemos tus reglas de ancho */
+    width: auto !important; /* Cambiado a auto para que 'display: table' funcione */
+    max-width: 95% !important;
+    margin: 0 auto !important; /* Centra el cuadro en el slide */
+
+    /* Lógica de centrado con escritura izquierda */
+    display: table !important; /* Hace que el ancho del bloque sea el de la línea más larga */
+    text-align: left !important; /* El texto dentro del bloque se escribe a la izquierda */
+    
+    /* Reset de estilos para evitar bordes o fondos extraños */
+    background: transparent !important;
+    border: none !important;
+    white-space: pre-wrap !important;
+    word-wrap: break-word !important;
+    letter-spacing: var(--user-letter-spacing, 0px) !important;
+}
+#bar-folders span:nth-child(2):active {
+    color: var(--accent-color);
+    opacity: 0.7;
+}
+
+
+/* --- NUEVA REGLA PARA ESCONDER ACORDES --- */
+/* Usamos una clase en el body para ocultarlos sin arruinar su formato original */
+body.acordes-ocultos .linea-acorde, 
+body.acordes-ocultos .chord, 
+body.acordes-ocultos .parentesis-regla {
+    display: none !important;
+}
+
+/* --- ESTILO PARA LOS NUEVOS BOTONES RECTANGULARES --- */
+/* --- ESTILO PARA LOS NUEVOS BOTONES DE COLOR (Estilo Pastilla) --- */
+.btn-color-rectangular {
+    width: 80px;  /* Doble de ancho que los botones B o I (40px) */
+    height: 38px; /* Misma altura exacta */
+    background: #333; 
+    border: 1px solid #444; 
+    border-radius: 6px; /* Mismos bordes redondeados que btn-p */
+    cursor: pointer; 
+    display: flex; 
+    align-items: center; 
+    justify-content: center; 
+    background: transparent;
+    transition: all 0.2s ease;
+}
+
+.btn-color-rectangular span {
+    color: #fff; 
+    font-family: var(--f-bold); 
+    font-size: 0.7rem; /* Más pequeño para que no rompa el botón */
+    letter-spacing: 0.5px;
+}
+/* Regla para los apuntes entre diagonales /.../ */
+.apunte-regla {
+    color: var(--notes-color, #B266FF) !important;
+    font-family: var(--f-medium) !important;
+    font-weight: 500 !important;
+}
+/* --- OCULTAR "APUNTES" CUANDO EL SWITCH ESTÁ APAGADO --- */
+body.apuntes-ocultos .apunte-regla {
+    display: none !important;
+}
+
+/* Opcional: Si el apunte está solo en una línea, ocultamos la línea completa para no dejar un hueco vacío */
+body.apuntes-ocultos .linea-letra-normal:has(> .apunte-regla:only-child) {
+    display: none !important;
+}
+/* ==========================================================================
+   23. MONITOR DE VISTA PREVIA EN VIVO (AJUSTES)
+   ========================================================================== */
+.contenedor-monitor-fijo {
+    position: sticky;
+    top: -25px; /* Compensa el padding superior del contenedor de ajustes */
+    margin: -25px -20px 20px -20px; /* Se expande hacia los bordes */
+    padding: 20px 20px 15px 20px;
+    background: #121212; /* Fondo sólido para tapar lo que scrollea por debajo */
+    z-index: 50;
+    border-bottom: 1px solid #333;
+    box-shadow: 0 10px 15px rgba(0,0,0,0.5); /* Sombra hacia abajo */
+}
+
+.live-preview-box {
+    width: 100%;
+    height: 38vh; /* <--- Subido de 23vh a 38vh para que ocupe más espacio */
+    min-height: 250px; /* <--- También aumentamos el mínimo */
+    /* Usa la variable de fondo para que si cambias el color de fondo de la app, el monitor cambie */
+    background-color: var(--bg-black) !important;
+    border: 1px solid #444;
+    border-radius: 8px;
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+
+
+/* ==========================================================================
+   SOPORTE DE ACORDES ANCLADOS (FLEXBOX SEGURO - SIN OVERLAPS)
+   ========================================================================== */
+.cp-pair {
+    display: inline-flex;
+    flex-direction: column;
+    justify-content: flex-end; 
+    align-items: flex-start;   
+    vertical-align: bottom;
+}
+
+.cp-chord {
+    display: block;
+    margin: 0 !important; 
+    padding-right: 6px; /* Colchoncito para que los acordes largos empujen a los demás */
+    min-height: 1.2em; /* Mantiene la misma altura siempre */
+    line-height: 1.2 !important;
+}
+
+.cp-lyric {
+    display: block;
+    white-space: pre-wrap; /* Mantiene los espacios exactos, pero envuelve si no cabe en pantalla */
+    line-height: var(--user-line-height, 1.6) !important;
+    word-break: break-word; 
+}
+/* ==========================================================================
+   2. EL MOTOR V11 (CAJITAS FLEXIBLES POR PALABRA - INDESTRUCTIBLES AL ZOOM)
+   ========================================================================== */
+
+
+/* La cajita invisible que mantiene unida la palabra con su acorde */
+.word-box {
+    display: inline-flex;
+    flex-direction: column;
+    vertical-align: bottom;
+    /* Al no poner wrap aquí, permitimos que el navegador baje las cajas enteras si no caben */
+}
+
+/* La cajita que envuelve la palabra y su acorde */
+.chord-word-box {
+    display: inline-block; /* Mantiene la palabra entera junta al hacer wrap */
+    position: relative;
+    vertical-align: bottom;
+    white-space: pre-wrap !important; 
+}
+
+/* Contenedor de acordes (por si caen dos en la misma palabra) */
+.chord-group {
+    position: absolute; 
+    bottom: 100%; /* Los empuja exactamente arriba de la palabra */
+    left: 0; 
+    display: flex; 
+    gap: 6px; 
+    white-space: nowrap;
+    margin-bottom: 2px; /* Pequeño colchón */
+}
+
+/* El acorde flotante (Forzado a Inter) */
+.chord-group .chord {
+    position: relative !important;
+    bottom: auto !important;
+    left: auto !important;
+    display: inline-block !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    font-family: var(--f-medium) !important;
+    color: var(--chord-color) !important;
+    font-weight: 500 !important;
+    font-size: calc(var(--user-chord-size, 15px) * var(--zoom-level, 1)) !important;
+    line-height: 1 !important;
+}
+
+/* El acorde dentro de la cajita (flotando arriba) */
+.chord-word-box .chord {
+    position: absolute;
+    bottom: 1.1em; /* Levanta el acorde justo encima de la letra */
+    left: 0;
+    margin: 0 !important;
+    padding: 0 !important;
+    line-height: 1 !important;
+    white-space: nowrap !important;
+    /* Mantenemos tu fuente de acordes original intacta */
+}
+/* ==========================================================================
+   MOTOR DE ENVOLTURA SINCRONIZADA (ACORDE Y LETRA VIAJAN JUNTOS AL HACER ZOOM)
+   ========================================================================== */
+.linea-sincronizada {
+    display: block;
+    margin-top: 8px; /* Separación limpia entre renglones */
+    line-height: var(--user-line-height, 1.6) !important;
+}
+
+.chunk-box {
+    display: inline-flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    align-items: flex-start;
+    vertical-align: bottom;
+}
+
+/* El acorde dentro de la cajita */
+.chunk-box .chord {
+    display: block !important;
+    margin: 0 !important;
+    padding-right: 4px; /* Respiro entre acordes si están pegados */
+    min-height: 1.2em; /* Reserva el espacio aunque no haya acorde */
+    line-height: 1 !important;
+}
+
+/* Un espacio vacío que mantiene la altura para las letras que no tienen acorde arriba */
+.chunk-chord-empty {
+    display: block;
+    min-height: 1.2em;
+    margin: 0;
+    line-height: 1;
+}
+
+/* El pedazo de letra dentro de la cajita */
+.chunk-lyric {
+    display: block;
+    white-space: pre-wrap; /* Mantiene tus espacios y permite salto de línea */
+    word-wrap: break-word;
+    line-height: var(--user-line-height, 1.6) !important;
+}
+
+/* ==========================================================================
+   PARCHE: RESPONSIVIDAD Y SALTO DE LÍNEA PERFECTO (MOTOR V12.5)
+   ========================================================================== */
+
+/* 1. Liberamos la prisión del visor para que el texto pueda fluir y saltar */
+.song-viewer pre, .song-slide pre {
+    white-space: pre-wrap !important;
+    word-wrap: break-word !important;
+    word-break: normal !important; /* Mantiene palabras unidas */
+    width: 100% !important;
+    max-width: 100% !important;
+    display: block !important; /* Quita bloqueos de tablas rígidas */
+    overflow-x: hidden !important; /* Adiós al scroll horizontal en móviles */
+}
+
+/* 2. El contenedor de la línea */
+.linea-chordpro {
+    display: block !important;
+    white-space: pre-wrap !important;
+    margin-top: 5px !important; 
+}
+
+/* 3. La cajita indivisible. Al ser inline-block y no tener espacios adentro, NUNCA se romperá a la mitad */
+.chunk {
+    display: inline-block !important;
+    vertical-align: top !important; /* VITAL: Alineación arriba para que las alturas dispares no colapsen */
+    margin-top: 10px !important; /* "Campo de fuerza": Si baja de línea, empuja la línea de arriba */
+}
+
+/* 4. Alturas matemáticas estrictas para evitar superposiciones */
+.chord-row {
+    display: block !important;
+    min-height: 1.3em !important; 
+    line-height: 1.3 !important;
+    padding-right: 2px !important;
+}
+
+.lyric-row {
+    display: block !important;
+    min-height: 1.2em !important; /* Mantiene la estructura aunque no haya texto */
+    line-height: var(--user-line-height, 1.6) !important;
+    white-space: pre-wrap !important;
+}
+/* Agrega esto al final de tu CSS */
+.word-wrapper {
+    display: inline-block !important;
+    white-space: nowrap !important;
+}
+/* En tu archivo style.css */
+
+.lyric-content { /* REEMPLAZA ESTA CLASE CON LA CLASE DE TU CONTENEDOR PRINCIPAL DE LA LETRA */
+  hyphens: none; /* Previene que las palabras se rompan con guiones */
+  overflow-wrap: break-word; /* Permite saltos de línea largos pero no corta palabras a menos que sea inevitable (como una URL muy larga) */
+}
+/* ==========================================================================
+   PARCHE: VISUALES (PDF E IMÁGENES) - TOUCH LIBERADO
+   ========================================================================== */
+.visor-pdf-container, .visor-imagen-container {
+    width: 100% !important;
+    overflow-x: auto !important; /* Permite scroll horizontal al hacer zoom */
+    overflow-y: visible !important;
+    touch-action: pan-x pan-y pinch-zoom !important; /* Libera el dedo del usuario */
+}
+/* ==========================================================================
+   ALTURA LIBERADA PARA VISUALES (Permite el Auto-Scroll)
+   ========================================================================== */
+.modo-visual-activo .visor-pdf-container, 
+.modo-visual-activo .visor-imagen-container {
+    top: 50px !important;
+    padding-top: 0 !important;
+    
+    /* 🔥 EL CAMBIO CLAVE: Quitamos la altura forzada */
+    height: auto !important; /* Deja que el PDF crezca hacia abajo sin límites */
+    min-height: calc(100vh - 50px) !important; /* Asegura que como mínimo cubra la pantalla, pero le permite seguir bajando */
+}
+/* --- NUEVA REGLA PARA ESCONDER LETRAS --- */
+body.letras-ocultas .linea-letra-normal, 
+body.letras-ocultas .chunk-lyric {
+    display: none !important;
+}
+/* --- COLOR DEL SWITCH APAGADO (GRIS) --- */
+.sw-v input:not(:checked) + .sw-slider {
+    background-color: #555555 !important;
+}
+
+/* Opcional: Para que la "bolita" también se vea un poco más apagada si quieres */
+.sw-v input:not(:checked) + .sw-slider:before {
+    background-color: #aaaaaa !important;
+}
+/* ==========================================================================
+   PARCHE CORREGIDO: MODO INSTRUMENTAL (SEPARADOR DE ACORDES)
+   ========================================================================== */
+
+/* 1. Agregamos el guion " - " después de CADA acorde válido sin excepciones */
+body.letras-ocultas .chunk-box span.chord:not(.chunk-chord-empty)::after {
+    content: " - ";
+    color: #666666;
+    margin-left: 10px;
+    margin-right: 10px;
+    font-family: var(--f-bold); /* Lo puse en negrita para que se vea más firme */
+}
+
+/* 2. Colapsamos por completo las cajitas de espacio en blanco */
+body.letras-ocultas .chunk-box:has(.chunk-chord-empty) {
+    display: none !important;
+}
+/* ==========================================================================
+   24. DIAGRAMAS DE ACORDES
+   ========================================================================== */
+.diagramas-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px; 
+    margin-bottom: 25px;
+    padding: 10px 0; 
+    justify-content: space-between; 
+    /* --- ESTO ROMPE EL LÍMITE Y LOS PEGA AL BORDE --- */
+    width: calc(100% + 30px) !important; 
+    margin-left: -15px !important; 
+    margin-right: -15px !important; 
+}
+
+.acorde-diagrama {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    font-family: var(--f-bold);
+    color: var(--chord-color);
+}
+
+.acorde-diagrama span {
+    margin-bottom: 5px;
+}
+
+/* Tamaños controlados por el menú de ajustes */
+.diag-peque svg { width: 50px; height: auto; }
+.diag-normal svg { width: 75px; height: auto; }
+.diag-grande svg { width: 100px; height: auto; }
+
+/* Comportamiento de la opción "Fijo" (Se pega abajo como un panel flotante) */
+.diag-fijo {
+    position: fixed;
+    bottom: 80px; 
+    left: 0;
+    width: 100%;
+    background: var(--bg-black);
+    border-top: 1px solid #333;
+    z-index: 1500;
+    margin-bottom: 0;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    padding: 10px 15px;
+    box-shadow: 0 -10px 20px rgba(0,0,0,0.5);
+}
+
+
+/* ==========================================================================
+   SWITCHES ELEGANTES (Toggle Buttons)
+   ========================================================================== */
+.switch-elegante {
+    position: relative;
+    display: inline-block;
+    width: 44px;
+    height: 24px;
+}
+
+.switch-elegante input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.slider-round {
+    position: absolute;
+    cursor: pointer;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background-color: #333;
+    transition: .3s;
+    border-radius: 24px;
+    border: 1px solid #555;
+}
+
+.slider-round:before {
+    position: absolute;
+    content: "";
+    height: 16px;
+    width: 16px;
+    left: 3px;
+    bottom: 3px;
+    background-color: #aaa;
+    transition: .3s;
+    border-radius: 50%;
+}
+
+.switch-elegante input:checked + .slider-round {
+    background-color: var(--accent-color);
+    border-color: var(--accent-color);
+}
+
+.switch-elegante input:checked + .slider-round:before {
+    transform: translateX(20px);
+    background-color: #fff;
+}
+/* ==========================================================================
+   MODO ANTI-FATIGA VISUAL: GRIS ELEGANTE PARA TODOS LOS MENÚS Y AJUSTES
+   ========================================================================== */
+
+/* 1. Menú Lateral (General, Personalizados, Diagrama, Seguridad, etc.) */
+.side-item {
+    color: #ccc !important;
+    transition: color 0.2s;
+}
+
+/* Que brille un poco al pasar el dedo/mouse */
+.side-item:hover {
+    color: #fff !important; 
+}
+
+/* Que mantenga tu color de énfasis si la pestaña está seleccionada */
+.side-item.active {
+color: #ccc !important;
+}
+
+/* 2. Textos y etiquetas de configuración (ej: "BPM:", "Cejilla:", "Luz:") */
+.etiqueta {
+    color: #ccc !important;
+}
+
+/* 3. Textos largos de las opciones (ej: "Gráficos de acordes para zurdos") */
+.flex-between span,
+.fila-ajuste > span {
+    color: #ccc !important;
+}
+
+/* 4. Suavizar los botones pequeños de más y menos (+ y -) */
+.btn-suelto {
+    color: #aaa !important;
+    border: 1px solid #333 !important;
+    background: #111 !important;
+}
+
+.btn-suelto:active {
+    background: #222 !important;
+}
+
+/* 5. Títulos genéricos de otras secciones que hayan quedado en blanco */
+.section-title {
+    color: #aaa !important;
+}
+
+/* 6. Mantener los valores numéricos un poquitito más claros para que se lean bien */
+#bpm-input, 
+#capo-display, 
+#compas-display {
+    color: #eee !important;
+}
+
+/* ==========================================================================
+   INVERSIÓN DE COLORES PARA VISUALIZADORES (AVANZADO)
+   ========================================================================== */
+body.invertir-pdf .visor-pdf-container canvas {
+    /* Invierte blanco y negro, pero mantiene colores legibles */
+    filter: invert(1) hue-rotate(180deg);
+}
+
+body.invertir-img .visor-imagen-container img {
+    filter: invert(1) hue-rotate(180deg);
+}
+
+/* ==========================================================================
+   REPRODUCTOR FLOTANTE INTELIGENTE (IZQ / DER)
+   ========================================================================== */
+.floating-player {
+    position: fixed;
+    top: 150px;
+    z-index: 50 !important; 
+    display: flex;
+    align-items: center;
+    padding: 0 !important;
+    
+/* 🔥 Transparencia extrema y desenfoque más cristalino */
+    background: rgba(20, 20, 20, 0.15) !important;
+    backdrop-filter: blur(12px) !important;
+    -webkit-backdrop-filter: blur(12px) !important;
+/* 🔥 LA CLAVE: Transición obligatoria desde el inicio */
+    transition: transform 0.4s cubic-bezier(0.32, 0.72, 0, 1), opacity 0.3s ease !important;
+}
+
+/* Para el tema claro */
+body.tema-claro .floating-player {
+    background: rgba(255, 255, 255, 0.15) !important;
+}
+
+.player-content-wrapper {
+    padding: 0 10px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+/* --- ESTADO: PEGADO A LA IZQUIERDA --- */
+.floating-player[data-edge="left"] {
+    left: 0; right: auto;
+    border-radius: 0 30px 30px 0 !important;
+    flex-direction: row;
+    transform: translateX(calc(-100% + 35px)); /* Escondido */
+}
+.floating-player[data-edge="left"].abierto { transform: translateX(0); }
+
+.floating-player[data-edge="left"] #player-handle {
+    border-left: 1px solid rgba(255,255,255,0.1);
+    border-right: none;
+}
+
+/* --- ESTADO: PEGADO A LA DERECHA --- */
+.floating-player[data-edge="right"] {
+    right: 0; left: auto;
+    border-radius: 30px 0 0 30px !important;
+    flex-direction: row-reverse; /* Invierte el orden: Pestaña a la izquierda */
+    transform: translateX(calc(100% - 35px)); /* Escondido */
+}
+.floating-player[data-edge="right"].abierto { transform: translateX(0); }
+
+.floating-player[data-edge="right"] #player-handle {
+    border-right: 1px solid rgba(255,255,255,0.1);
+    border-left: none;
+}
+
+/* --- Pestaña para jalar --- */
+#player-handle {
+    width: 35px;
+    height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: grab;
+    color: #ccc;
+}
+#player-handle:active { background: rgba(255,255,255,0.1); }
+
+/* =========================================
+   BOTONES DE LA CÁPSULA DE AUDIO
+   ========================================= */
+.floating-player .control-btn,
+.floating-player .cap-btn,
+.floating-player #btn-player-pads { /* <-- Fuerza a que el Piano NO tenga fondo */
+    width: 34px;  
+    height: 34px; 
+    border-radius: 50% !important; 
+    
+    color: rgba(255, 255, 255, 0.8) !important; 
+    background: transparent !important; /* 100% Sin fondo */
+    border: none !important;
+    box-shadow: none !important;
+    
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    outline: none;
+    transition: all 0.3s ease; /* Transición suave para el brillo */
+    cursor: pointer;
+    padding: 0;
+    margin: 0;
+    overflow: hidden;
+}
+
+/* Ajuste de iconos generales */
+.floating-player .control-btn .material-icons,
+.floating-player .cap-btn .material-icons {
+    font-size: 22px;
+    color: inherit;
+}
+
+/* El botón Play más grande */
+.floating-player #btn-player-play {
+    width: 44px;
+    height: 44px;
+}
+.floating-player #btn-player-play .material-icons {
+    font-size: 30px !important;
+}
+
+/* Efectos al pasar el dedo/mouse (idle) */
+.floating-player .control-btn:hover,
+.floating-player .cap-btn:hover {
+    background-color: rgba(255, 255, 255, 0.1) !important;
+}
+.floating-player .control-btn:active,
+.floating-player .cap-btn:active {
+    transform: scale(0.9);
+}
+
+/* =========================================
+   🔥 ESTADO ACTIVO: BRILLO INTENSO 🔥
+   ========================================= */
+/* Cuando le das Play (.activo-btn) o activas el Piano (.activo-pad) */
+.floating-player .control-btn.activo-btn,
+.floating-player .cap-btn.activo-pad,
+.floating-player #btn-player-play.activo-btn,
+.floating-player #btn-player-pads.activo-pad {
+    color: var(--accent-color) !important; 
+    
+    /* Fondo translúcido tintado con tu color de acento */
+    background-color: color-mix(in srgb, var(--accent-color) 20%, transparent) !important; 
+    
+    /* Sombra exterior resplandeciente */
+    filter: drop-shadow(0 0 6px var(--accent-color)); 
+}
+
+/* ==========================================================================
+   REJILLA DE PADS ATMOSFÉRICOS
+   ========================================================================== */
+.pad-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+    margin-top: 15px;
+    margin-bottom: 20px;
+}
+
+.pad-btn {
+    background: #1a1a1a;
+    border: 1px solid var(--accent-color);
+    color: var(--accent-color);
+    border-radius: 8px;
+    padding: 18px 0;
+    text-align: center;
+    font-family: var(--f-bold);
+    font-size: 1rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.pad-btn.activo-pad {
+    background: color-mix(in srgb, var(--accent-color) 20%, transparent);
+    box-shadow: 0 0 15px color-mix(in srgb, var(--accent-color) 40%, transparent);
+    color: #fff;
+}
+
+
+/* ==========================================================================
+   FILTROS DE INVERSIÓN (MODO OSCURO PARA PDF E IMÁGENES)
+   ========================================================================== */
+
+/* Invertir PDFs */
+body.invertir-pdf .visor-pdf-container canvas {
+    /* invert(1) cambia blanco por negro. hue-rotate(180deg) evita que los colores se vuelvan radiactivos */
+    filter: invert(1) hue-rotate(180deg);
+    transition: filter 0.3s ease; /* Le da un efecto de transición suave al encenderlo */
+}
+
+/* Invertir Imágenes */
+body.invertir-img .visor-imagen-container img {
+    filter: invert(1) hue-rotate(180deg);
+    transition: filter 0.3s ease;
+}
+
+/* Opcional: Oscurecer el fondo contenedor si el PDF no cubre toda la pantalla */
+body.invertir-pdf .visor-pdf-container,
+body.invertir-img .visor-imagen-container {
+    background-color: #000000;
+}
+
+/* =========================================
+   ESTADO ACTIVO (SOLO CUANDO SE ACTIVA)
+   ========================================= */
+.floating-player #btn-player-pads.activo-pad {
+    background-color: rgba(76, 175, 80, 0.2) !important; 
+    border-color: var(--accent-color) !important;        
+}
+
+.floating-player #btn-player-pads.activo-pad #txt-pad-flotante {
+    color: var(--accent-color) !important;               
+}
+
+
+/* Ajuste del ícono de Play/Subir para que siempre se vea bien */
+#btn-player-play .material-icons {
+    font-size: 1.8rem; /* Un poco más grande para que la flecha destaque */
+}
+
+/* ==========================================================================
+   DISEÑO DEL PANEL DE ACCESOS RÁPIDOS (RAYITO ⚡)
+   ========================================================================== */
+.quick-modal-overlay {
+    position: fixed; 
+    top: 50px; /* Exactamente debajo de la Top Bar */
+    left: 0; 
+    width: 100vw; 
+    height: calc(100vh - 50px);
+    background: rgba(0,0,0,0.6); 
+    z-index: 800; /* Por debajo de la barra superior (1000) para caer de atrás */
+    display: flex; 
+    justify-content: flex-end; /* Alineado a la derecha */
+    align-items: flex-start;
+    visibility: hidden; 
+    opacity: 0; 
+    transition: opacity 0.3s ease;
+}
+
+.quick-modal-overlay.active { 
+    visibility: visible; 
+    opacity: 1; 
+}
+
+.quick-panel {
+    background: #111; 
+    width: 85%; 
+    max-width: 320px;
+    border-radius: 0 0 0 24px; /* Solo redondea la esquina inferior izquierda */
+    border-left: 2px solid var(--accent-color); 
+    border-bottom: 2px solid var(--accent-color);
+    padding: 20px;
+    /* Inicia escondido arriba */
+    transform: translateY(-100%); 
+    transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 10px 0 30px rgba(0,0,0,0.7);
+}
+
+.quick-modal-overlay.active .quick-panel { 
+    transform: translateY(0); /* Cae a su posición natural */
+}
+
+.quick-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 20px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #333;
+}
+
+.quick-title {
+    color: #888888 !important; /* Gris elegante y discreto */
+    font-family: var(--f-bold);
+    font-size: 0.85rem !important; /* Más pequeño (antes era 1.1rem) */
+    letter-spacing: 1px;
+}
+
+/* Rejilla de 4 columnas para los botones */
+.quick-grid { 
+    display: grid; 
+    grid-template-columns: repeat(4, 1fr); /* 🔥 CAMBIO A 4 COLUMNAS */
+    gap: 8px; /* 🔥 Ligeramente ajustado para dar más aire */
+}
+
+/* Estilo Base del Botón Rápido */
+.q-btn { 
+    background: #222; 
+    border: 1px solid #333; 
+    border-radius: 12px; 
+    display: flex; 
+    flex-direction: column; 
+    align-items: center; 
+    justify-content: center;
+    padding: 8px 2px; /* 🔥 Bajamos de 12px a 8px el relleno de arriba y abajo */
+    cursor: pointer; 
+    gap: 4px; /* 🔥 Juntamos un pelín más el icono y el texto */
+    transition: all 0.2s ease; 
+    min-height: 65px; /* 🔥 Forzamos a que tengan una proporción más cuadradita */
+}
+
+/* Reducimos sutilmente los iconos para encajar en las 4 columnas */
+.q-btn .material-icons,
+.chord-icon { 
+    font-size: 1.5rem !important; /* 🔥 De 1.8 a 1.5 para el dedo perfecto */
+    color: #777; 
+    transition: 0.2s; 
+}
+
+/* Reducimos también los iconos dibujados (Afinador e Instrumento) */
+.custom-inst-icon,
+.custom-tuner-icon {
+    transform: scale(0.85); /* 🔥 Los encoge sin romper tu dibujo */
+    margin-bottom: 0px !important;
+}
+
+.q-btn span:last-child { 
+    font-size: 0.55rem; /* 🔥 Letra un poco más fina */
+    font-family: var(--f-bold); 
+    color: #aaa; 
+    text-align: center; 
+    line-height: 1.1; 
+    width: 100%;
+    word-break: break-word; /* 🔥 Permite que textos largos bajen de línea limpios */
+    padding: 0 2px;
+}
+
+/* Estado Encendido (Activo) */
+.q-btn.active { 
+    background: color-mix(in srgb, var(--accent-color) 15%, transparent); 
+    border-color: var(--accent-color); 
+}
+
+.q-btn.active .material-icons, 
+.q-btn.active span:last-child,
+.q-btn.active .chord-icon { 
+    color: var(--accent-color) !important; 
+}
+
+.q-btn:active { transform: scale(0.95); }
+
+
+/* ==========================================================================
+   CSS ACTUAZLISADO: ESTILOS PARA LOS ICONOS DE CIFRADO Y NOTACIÓN
+   ========================================================================== */
+.chord-icon {
+    font-size: 1.8rem; /* 🔥 Prominente, como pediste, similar a los iconos de material */
+    font-family: var(--f-bold); /* Usa tu fuente existente */
+    display: inline-block;
+    vertical-align: middle;
+    line-height: 1; /* Para alinear bien el texto */
+    width: 24px; /* Un ancho fijo para la consistencia */
+    text-align: center;
+    color: #808080
+}
+/* Color gris para botones de pad inactivos en el modal */
+.pad-btn-rayo {
+    background: #1a1a1a; /* Gris muy oscuro */
+    border: 1px solid #333; /* Borde gris medio */
+    color: #888; /* Texto gris claro */
+}
+
+#btn-rayo {
+    color: var(--accent-color);
+    font-size: 30px; /* Ya que querías hacerlo más grande */
+    transition: color 0.3s ease; /* Para que el cambio de color sea suave */
+}
+
+/* ==========================================================================
+   DISEÑO MODAL DE BÚSQUEDA (COMPACTO Y ELEGANTE)
+   ========================================================================== */
+.btn-platform {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    width: 100%;
+    padding: 12px; 
+    border-radius: 10px; 
+    background: #1a1a1a; 
+    border: 1px solid #2a2a2a; 
+    color: #888; /* 🔥 LETRAS GRISES AQUÍ */
+    font-family: var(--f-bold);
+    font-size: 1rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.btn-platform:active {
+    transform: scale(0.95);
+    background: #222;
+}
+
+/* 🔥 SOLO LOS ICONOS MANTIENEN SU COLOR OFICIAL */
+.btn-youtube .material-icons { color: #ff4444; }
+.btn-spotify .material-icons { color: #1DB954; }
+.btn-tidal .material-icons { color: #00ffff; }
+
+/* ==========================================================================
+   MODIFICACIÓN: QUITAR BORDES CUADRADOS (RESPETANDO CÍRCULOS DE + Y -)
+   ========================================================================== */
+
+/* 1. TEMA OSCURO (PREDETERMINADO) */
+/* Quita los bordes solo a los botones sueltos (cuadrados) */
+.btn-suelto {
+    border: none !important;
+    background: transparent !important;
+    box-shadow: none !important;
+}
+
+/* Devuelve el círculo a + y - */
+.btn-modal-round {
+    border: 1px solid #444 !important;
+    background: rgba(255,255,255,0.1) !important;
+    border-radius: 50% !important;
+}
+
+/* Efecto al tocar los botones sueltos en tema oscuro */
+.btn-suelto:active {
+    background: rgba(255, 255, 255, 0.1) !important;
+    border-radius: 50% !important;
+    color: var(--accent-color) !important;
+}
+/* Efecto al presionar */
+.btn-ocr-capture:active {
+    transform: scale(0.95);
+    opacity: 0.8;
+}
+/* --- ESTILO DINÁMICO PARA BOTÓN OCR --- */
+
+/* Por defecto (Tema Oscuro) */
+.btn-ocr-capture {
+    background-color: color-mix(in srgb, var(--accent-color) 15%, transparent) !important;
+    color: var(--accent-color) !important;
+}
+/* ==========================================================================
+   UI DE IMPRESIÓN (PANTALLA COMPLETA NATIVA)
+   ========================================================================== */
+.print-panel-ios {
+    width: 100%;
+    height: 100vh; /* Pantalla completa */
+    background: #000000;
+    display: flex;
+    flex-direction: column;
+    transform: translateY(100%);
+    transition: transform 0.35s cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+#modal-impresion.active .print-panel-ios {
+    transform: translateY(0);
+}
+
+.print-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px 20px;
+    background: #000000;
+    border-bottom: none; /* Quitamos la línea de abajo */
+}
+
+.print-title {
+    color: #fff;
+    font-family: var(--f-bold);
+    font-size: 1.2rem;
+}
+
+.btn-icon-print {
+    color: var(--accent-color) !important;
+    font-size: 26px !important;
+    cursor: pointer;
+}
+
+.print-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 10px 15px 20px 15px;
+    background: #000000;
+}
+
+.ios-block {
+    background: #1c1c1e;
+    border-radius: 12px;
+    margin-bottom: 20px;
+    display: flex;
+    flex-direction: column;
+}
+
+.print-pad-block {
+    padding: 16px;
+}
+
+.ios-row {
+    padding: 12px 16px;
+    display: flex;
+    align-items: center;
+    min-height: 54px; /* Unifica el alto de las filas */
+}
+
+.ios-divider {
+    height: 1px;
+    background: #2c2c2e;
+    margin-left: 16px;
+}
+
+.ios-label {
+    color: #fff;
+    font-family: var(--f-medium);
+    font-size: 1.05rem;
+}
+
+.ios-sublabel {
+    color: #888;
+    font-size: 0.85rem;
+    font-family: var(--f-medium);
+}
+
+.ios-value-group {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.ios-value {
+    color: #aaa;
+    font-size: 1rem;
+    font-family: var(--f-medium);
+}
+
+.ios-arrow {
+    color: #666;
+    font-size: 20px;
+}
+
+/* Controles Stepper (Copias, Escala, Orientacion) */
+.stepper-group {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.stepper-val {
+    color: #fff;
+    font-family: var(--f-bold);
+    font-size: 1.05rem;
+}
+
+.stepper-controls {
+    display: flex;
+    background: #2c2c2e;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.stepper-btn {
+    width: 42px;
+    height: 34px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    color: #fff;
+    font-size: 1.4rem;
+    cursor: pointer;
+    user-select: none;
+    font-family: monospace;
+}
+
+.stepper-btn:active { background: #3a3a3c; }
+.stepper-btn.active-ori { background: #444; color: var(--accent-color) !important; }
+
+.stepper-divider {
+    width: 1px;
+    background: #1c1c1e;
+}
+
+/* ACTUALIZACIÓN ÁREA DE MINIATURAS: Permite deslizar hacia abajo libremente */
+.print-preview-scroll {
+    display: flex;
+    justify-content: center;
+    overflow-x: hidden;
+    padding: 10px 0 30px 0;
+}
+
+.thumb-wrapper {
+    flex-shrink: 0;
+    width: 220px; /* Hojas ligeramente más grandes */
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    scroll-snap-align: center;
+}
+
+.thumb-page {
+    width: 100%;
+    height: 310px;
+    background: #fff;
+    border-radius: 4px;
+    overflow: hidden;
+    position: relative;
+    padding: 10px;
+    font-size: 4px; 
+    line-height: 1.2;
+    color: #000;
+}
+
+/* Botón inferior de las miniaturas */
+.thumb-check-btn {
+    margin-top: 15px;
+    background: #2c2c2e;
+    padding: 8px 20px;
+    border-radius: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    color: #fff;
+    font-family: var(--f-bold);
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.thumb-check-btn.active {
+    background: var(--accent-color);
+    color: #000;
+}
+/* ==========================================================================
+   MOTOR DE ANIMACIONES TIPO iOS (SÓLIDAS, SIN DEGRADAR)
+   ========================================================================== */
+
+/* 1. FONDOS DE MODALES (Solo el fondo negro se esfuma, la ventana NO) */
+.modal-overlay {
+    display: flex !important; 
+    visibility: hidden;
+    background-color: rgba(0,0,0,0);
+    transition: visibility 0.35s, background-color 0.35s ease;
+}
+.modal-overlay.active {
+    visibility: visible;
+    background-color: rgba(0,0,0,0.85); /* Fondo oscuro nativo */
+}
+
+/* 2. VENTANAS PEQUEÑAS (Tono, Confirmar, Búsqueda, Afinador) */
+/* He agregado :not(.options-menu) para que no afecte a tus 3 puntitos */
+.modal-overlay > div:not(.quick-panel):not(.config-window):not(.options-menu) {
+    transform: translateY(120vh); 
+    opacity: 1 !important; 
+    transition: transform 0.35s cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+.modal-overlay.active > div:not(.quick-panel):not(.config-window):not(.options-menu) {
+    transform: translateY(0);
+}
+
+/* Bloqueo extra para que los menús se queden en su sitio */
+.options-menu {
+    transform: none !important;
+    opacity: 0; /* Inicia invisible para que el motor JS lo maneje */
+    visibility: hidden;
+}
+
+.options-menu.active {
+    opacity: 1 !important;
+    visibility: visible !important;
+    display: block !important;
+}
+
+/* 3. VENTANAS GIGANTES PANTALLA COMPLETA (Crear Canción y Ajustes) */
+/* Entran y salen ENTERAS deslizando hacia la derecha, sin degradarse */
+.create-modal-full {
+    display: flex !important;
+    visibility: hidden;
+    transform: translateX(100%);
+    opacity: 1 !important; /* NUNCA SE DEGRADAN */
+    transition: visibility 0.35s, transform 0.35s cubic-bezier(0.32, 0.72, 0, 1);
+}
+.create-modal-full.active {
+    visibility: visible;
+    transform: translateX(0);
+}
+
+#config-modal > div {
+    transform: translateX(100%);
+    opacity: 1 !important; /* NUNCA SE DEGRADAN */
+    transition: transform 0.35s cubic-bezier(0.32, 0.72, 0, 1);
+    width: 100%; 
+    height: 100%;
+}
+#config-modal.active > div {
+    transform: translateX(0);
+}
+
+/* 4. MENÚS DESPLEGABLES (3 puntos, ordenar, importar) */
+/* Hacen un pop/zoom rapidísimo como los menús de Apple */
+.options-menu, .bulk-menu-up, #import-options-menu, #sort-options-menu {
+    display: block !important;
+    visibility: hidden;
+    opacity: 0;
+    transform: scale(0.85) translateY(10px);
+    transition: visibility 0.2s, opacity 0.2s, transform 0.25s cubic-bezier(0.32, 0.72, 0, 1);
+    animation: none !important;
+}
+.options-menu.active, .bulk-menu-up.active, #import-options-menu.active, #sort-options-menu.active {
+    visibility: visible;
+    opacity: 1;
+    transform: scale(1) translateY(0);
+}
+.options-menu.subir { transform: scale(0.85) translateY(-10px); }
+.options-menu.subir.active { transform: scale(1) translateY(0); }
+
+
+/* 5. NAVEGACIÓN INTERNA (Cambio de pestañas o ajustes) */
+@keyframes slideInRightIOS {
+    from { transform: translateX(25px); opacity: 0; }
+    to { transform: translateX(0); opacity: 1; }
+}
+#config-main-view > div, #main-songs-list {
+    animation: slideInRightIOS 0.3s cubic-bezier(0.32, 0.72, 0, 1) forwards;
+}
+
+
+/* 6. TOQUE SUAVE iOS PARA FLECHAS Y BOTONES (Feedback visual al tacto) */
+/* Preparamos todos los botones y flechas para ser suaves */
+.c-h-left, 
+.config-header .material-icons, 
+.panel-header .material-icons, 
+div[onclick*="showFoldersView"],
+div[onclick*="showSongsView"],
+.btn-p, .dev-btn, .tab, .nav-item, .side-item, .song-item, .folder-item, .q-btn {
+    transition: opacity 0.2s ease, background-color 0.2s ease, transform 0.15s ease !important;
+    cursor: pointer;
+}
+
+/* LA MAGIA: Flechas de retroceso con efecto suave iOS */
+.c-h-left:active, 
+.config-header .material-icons:active, 
+.panel-header .material-icons:active {
+    opacity: 0.3 !important;
+    transform: scale(0.95);
+}
+
+/* Tabs inferiores con iluminación simple (Cero vibración, cero doble luz) */
+div[onclick*="showFoldersView"]:active,
+div[onclick*="showSongsView"]:active,
+.tab:active,
+.nav-item:active {
+    background-color: rgba(255, 255, 255, 0.08) !important;
+    opacity: 1 !important;
+    transform: none !important;
+}
+/* Brillo para la imagen del pad en el reproductor flotante cuando está activo */
+.floating-player #btn-player-pads.activo-pad img {
+    opacity: 1 !important;
+    filter: drop-shadow(0 0 2px var(--accent-color)) brightness(1.2);
+}
+/* ==========================================================================
+   LÍNEA GUÍA DEL AUTOPLAY (SYNC)
+   ========================================================================== */
+#autoplay-sync-line {
+    position: fixed;
+    top: 25%; /* Ajustado al 25% de la pantalla */
+    left: 0;
+    width: 100%;
+    height: 1px;
+    background-color: var(--accent-color);
+    opacity: 0;
+    pointer-events: none; 
+    z-index: 500; /* 🔥 SOLUCIÓN: Bajamos de 900 a 500 */
+    display: none;
+    transition: opacity 0.4s ease;
+}
+
+body.mostrar-linea-sync #autoplay-sync-line {
+    display: block;
+    opacity: 0.25; 
+}
+
+body.mostrar-linea-sync #autoplay-sync-line.linea-flash {
+    opacity: 0.9;
+    height: 2px;
+    box-shadow: 0 0 12px var(--accent-color);
+    transition: none !important; 
+}
+/* ==========================================================================
+   ALINEACIÓN MODO AUTOPLAY (25%)
+   ========================================================================== */
+body.modo-autoplay .song-slide,
+body.modo-autoplay .lyrics-container {
+    /* 🔥 LA MAGIA: Cero toques arriba. Solo un colchón abajo del 75% 
+       para permitir que la última línea alcance el láser */
+    padding-bottom: 75vh !important; 
+    transition: padding-bottom 0.3s ease;
+}
+
+/* ================================================================================================================================================================================================================
+   TEMA CLARO (LIGHT THEME) - VERSIÓN OPTIMIZADA Y UNIFICADA
+   ================================================================================================================================================================================================================ */
+
+/* --------------------------------------------------------------------------
+   1. EL VISOR SAGRADO Y VARIABLES BASE (INTOCABLE)
+   -------------------------------------------------------------------------- */
+/* Al entrar en tema claro, cambiamos los colores base por defecto. 
+   Si tu JS inyecta un color en línea con !important, este será ignorado. */
+body.tema-claro {
+    --lyrics-color: #121212; /* Letra negra por defecto en tema claro */
+    --chord-color: #00ffff;  /* Acorde por defecto */
+    --structure-color: #888888; /* Encabezados por defecto */
+}
+body.tema-claro .song-viewer pre {
+    color: var(--lyrics-color) !important;
+}
+
+body.tema-claro .chord { 
+    color: var(--chord-color) !important; 
+    text-shadow: none !important; 
+    font-weight: bold !important; 
+}
+
+body.tema-claro .linea-encabezado-txt { 
+    color: var(--structure-color) !important; 
+}
+
+body.tema-claro, 
+body.tema-claro .app-wrapper,
+body.tema-claro .song-viewer, 
+body.tema-claro .lyrics-container, 
+body.tema-claro .live-preview-box {
+    background-color: var(--bg-black) !important;
+}
+
+/* --------------------------------------------------------------------------
+   2. FONDOS GENERALES, MODALES Y PANELES
+   -------------------------------------------------------------------------- */
+/* Blancos puros (#ffffff) */
+body.tema-claro .panel-content, body.tema-claro .create-body-new,
+body.tema-claro .config-window, body.tema-claro .create-modal-full, 
+body.tema-claro .modal-content, body.tema-claro .transpose-modal,
+body.tema-claro #move-modal .modal-content, body.tema-claro #modal-dinamico .modal-content,
+body.tema-claro .editor-full-frame textarea, body.tema-claro .box-input,
+body.tema-claro .box-input input, body.tema-claro .box-tone, body.tema-claro .box-tone input,
+body.tema-claro .input-bpm-modal, body.tema-claro .search-bar, body.tema-claro .analizador-container,
+body.tema-claro .dev-select, body.tema-claro select,
+body.tema-claro .options-menu, body.tema-claro .bulk-menu-up,
+body.tema-claro .diag-fijo, body.tema-claro .ios-block,
+body.tema-claro button[onclick="abrirVistaPreviaImpresion()"] {
+    background-color: #ffffff !important;
+    border-color: #cccccc !important;
+}
+
+/* Grises claritos / Crema (#f2f2f7, #f7f7f7, #f9f9f9) */
+body.tema-claro .top-bar, body.tema-claro .panel-header, body.tema-claro .config-header,
+body.tema-claro .create-header, body.tema-claro .song-info-header, body.tema-claro .bottom-nav-compact,
+body.tema-claro .panel-tabs, body.tema-claro .actions-bar-short, body.tema-claro .search-section,
+body.tema-claro .sort-bar, body.tema-claro .config-sidebar,
+body.tema-claro .contenedor-monitor-fijo, body.tema-claro .config-content,
+body.tema-claro .quick-panel, body.tema-claro .quick-header,
+body.tema-claro .print-panel-ios, body.tema-claro .print-body, body.tema-claro .print-header,
+body.tema-claro .stepper-controls, body.tema-claro #main-songs-list div[onclick="showFoldersView()"],
+body.tema-claro div[style*="background: #0c0c0c"], body.tema-claro div[style*="background: rgb(12, 12, 12)"],
+body.tema-claro #section-comprar div[style*="background: #0d0d0d"], body.tema-claro #section-acerca div[style*="background: #111"],
+body.tema-claro #section-pads div[style*="background: #111"] {
+    background-color: #f2f2f7 !important; 
+    border-color: #d1d1d6 !important;
+}
+
+/* --------------------------------------------------------------------------
+   3. TEXTOS GLOBALES: EL MOTOR DEL GRIS (#666666) Y GRIS OSCURO (#121212)
+   -------------------------------------------------------------------------- */
+/* Negro suave para títulos, etiquetas de ajustes y descripciones */
+body.tema-claro .radio-container, body.tema-claro .est-name, body.tema-claro .est-header span, 
+body.tema-claro .label-lateral, body.tema-claro .panel-title-text, body.tema-claro .label-p-header, 
+body.tema-claro .dev-subtitle, body.tema-claro #section-comprar li, body.tema-claro .dev-select[onclick*="sync-modo"],
+body.tema-claro .editor-full-frame textarea, body.tema-claro .box-input, body.tema-claro .box-input input, 
+body.tema-claro .options-menu .menu-item, body.tema-claro .bulk-menu-up .menu-item,
+body.tema-claro .etiqueta, body.tema-claro .flex-between span, body.tema-claro .fila-ajuste > span,
+body.tema-claro .ios-label, body.tema-claro #section-comprar p, body.tema-claro #section-acerca p,
+body.tema-claro .modal-content p, body.tema-claro #confirm-message, body.tema-claro .config-option-row span,
+body.tema-claro #section-avanzado span[style*="color: #ccc"], body.tema-claro #section-avanzado span[style*="color: #eee"],
+body.tema-claro #md-mensaje p, body.tema-claro #md-mensaje div {
+    color: #121212 !important;
+    -webkit-text-fill-color: #121212 !important;
+}
+
+/* LA RÁFAGA GRIS: Todos los parches unificados (#666666) */
+body.tema-claro .song-item *, body.tema-claro .folder-item *, 
+body.tema-claro .song-item:not(.selected) *, body.tema-claro .folder-item:not(.selected) *, 
+body.tema-claro .song-title-mini, body.tema-claro .tab:not(.active), body.tema-claro .nav-item:not(.active) span,
+body.tema-claro .config-content h2, body.tema-claro .config-content h3, body.tema-claro .config-content h4,
+body.tema-claro .side-item, body.tema-claro .check-label, body.tema-claro .v-label,
+body.tema-claro .modal-title, body.tema-claro .dev-add span, body.tema-claro .btn-color-rectangular span,
+body.tema-claro .actions-bar-short .btn-suelto span, body.tema-claro .btn-suelto span,
+body.tema-claro .panel-header .material-icons, body.tema-claro .config-header .material-icons,
+body.tema-claro .top-bar .material-icons, body.tema-claro .song-item .material-icons,
+body.tema-claro .folder-item .material-icons, body.tema-claro .options-menu .material-icons,
+body.tema-claro .actions-bar-short *, body.tema-claro .folder-item.selected .f-name,
+body.tema-claro .dynamic-island .cap-btn, body.tema-claro .floating-player .control-btn,
+body.tema-claro .floating-player .cap-btn, body.tema-claro .floating-player .material-icons,
+body.tema-claro .floating-controls .reset-btn, body.tema-claro .display-grande,
+body.tema-claro .transpose-modal .modal-body span, body.tema-claro .transpose-modal .modal-footer-options span,
+body.tema-claro .transpose-modal .check-label, body.tema-claro .transpose-modal .selector-pestaña,
+body.tema-claro #bpm-input, body.tema-claro #capo-display, body.tema-claro #compas-display,
+body.tema-claro .input-bpm-modal, body.tema-claro .main-title, body.tema-claro #capo-indicator,
+body.tema-claro #capo-indicator span, body.tema-claro #main-songs-list div[onclick="showFoldersView()"] span:last-child,
+body.tema-claro .quick-title, body.tema-claro #modal-compartir span[style*="color: #888"],
+body.tema-claro .stepper-val, body.tema-claro .ios-value, body.tema-claro #comp-ori-label,
+body.tema-claro #print-ori-label, body.tema-claro .ios-sublabel {
+    color: #666666 !important;
+    -webkit-text-fill-color: #666666 !important;
+}
+
+/* Búsqueda, Inputs y Notas de ayuda */
+body.tema-claro .search-bar input { color: #333333 !important; }
+body.tema-claro .search-bar input::placeholder, body.tema-claro #md-input::placeholder { color: #888888 !important; -webkit-text-fill-color: #888888 !important; }
+body.tema-claro #md-mensaje, body.tema-claro #md-mensaje *, body.tema-claro .q-btn span:last-child { color: #444444 !important; -webkit-text-fill-color: #444444 !important; }
+/* --------------------------------------------------------------------------
+   4. PROTECCIÓN DEL COLOR DE ÉNFASIS (EL ACENTO)
+   -------------------------------------------------------------------------- */
+body.tema-claro .panel-title-text, body.tema-claro .config-header .material-icons,
+body.tema-claro .create-header .material-icons, body.tema-claro #move-modal h3, 
+body.tema-claro #modal-dinamico h3, body.tema-claro .dev-title, body.tema-claro #display-pin-sync,
+body.tema-claro #crear-tono, body.tema-claro #crear-bpm, body.tema-claro #crear-display-tonalidad, 
+body.tema-claro #display-notas, body.tema-claro .c-h-center b, body.tema-claro #md-mensaje b,
+body.tema-claro .q-btn.active span, body.tema-claro .q-btn.active .material-icons, 
+body.tema-claro .q-btn.active .chord-icon, body.tema-claro .nav-item.active .material-icons,
+body.tema-claro .nav-item.active span, body.tema-claro .song-item.selected .material-icons, 
+body.tema-claro .folder-item.selected .material-icons, body.tema-claro #folders-list-dynamic span.material-icons {
+    color: var(--accent-color) !important;
+    -webkit-text-fill-color: var(--accent-color) !important;
+}
+
+body.tema-claro .key-badge {
+    background-color: color-mix(in srgb, var(--accent-color) 15%, transparent) !important;
+    border-color: color-mix(in srgb, var(--accent-color) 40%, transparent) !important;
+}
+
+body.tema-claro .key-badge span:first-child, body.tema-claro #header-tone-label {
+    color: var(--accent-color) !important;
+    -webkit-text-fill-color: var(--accent-color) !important;
+    opacity: 1 !important;
+}
+
+body.tema-claro .song-key-badge {
+    background-color: color-mix(in srgb, var(--accent-color) 15%, transparent) !important;
+    color: var(--accent-color) !important;
+    border: 1px solid color-mix(in srgb, var(--accent-color) 30%, transparent) !important;
+}
+
+/* --------------------------------------------------------------------------
+   5. BOTONES DE INTERFAZ Y ESTADOS (Limpieza de contradicciones)
+   -------------------------------------------------------------------------- */
+/* Botones Estándar (Blanco con texto gris) */
+body.tema-claro .btn-gris-grande, body.tema-claro .btn-color-rectangular, body.tema-claro .btn-modal-round,
+body.tema-claro .btn-t, body.tema-claro .btn-estilo, body.tema-claro .btn-p,
+body.tema-claro .cuadrito-capo, body.tema-claro .pad-btn, body.tema-claro .item-pad-lista,
+body.tema-claro .select-box-p, body.tema-claro .segment-control, body.tema-claro .segment-grid,
+body.tema-claro .segment-item, body.tema-claro .bg-box-preview, body.tema-claro .velocity-capsule,
+body.tema-claro .dev-btn, body.tema-claro .dev-trash, body.tema-claro .q-btn {
+    background-color: #ffffff !important; 
+    color: #555555 !important; 
+    border: 1px solid #cccccc !important;
+}
+
+/* Botón Suelto (+ y -) SIN BORDES (Arreglado) */
+body.tema-claro .btn-suelto {
+    background-color: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    color: #555555 !important;
+}
+body.tema-claro .btn-suelto:active {
+    background-color: #e0e0e0 !important;
+    border-radius: 50% !important;
+    color: var(--accent-color) !important; 
+}
+
+/* Botón OCR (Cámara) */
+body.tema-claro .btn-ocr-capture {
+    background-color: var(--accent-color) !important;
+    color: #ffffff !important; 
+    border: none !important;
+}
+body.tema-claro .btn-ocr-capture .material-icons { color: #ffffff !important; }
+
+/* Botón Aceptar Modal (Blanco puro) */
+body.tema-claro #md-btn-confirmar { color: #ffffff !important; -webkit-text-fill-color: #ffffff !important; }
+
+/* Botones Secundarios Modal (Gris) */
+body.tema-claro .modal-content .btn-secondary, body.tema-claro #move-modal .btn-secondary {
+    background-color: #e0e0e0 !important;
+    border: 1px solid #cccccc !important;
+    color: #555555 !important;
+    -webkit-text-fill-color: #555555 !important;
+    font-weight: bold !important;
+}
+body.tema-claro .modal-content .btn-secondary:active, body.tema-claro #move-modal .btn-secondary:active {
+    background-color: #cccccc !important;
+}
+
+/* Tachitos de Basura (Naranja) */
+body.tema-claro .material-icons[onclick*="delete"], body.tema-claro .material-icons[onclick*="Eliminar"],
+body.tema-claro .material-icons[onclick*="Quitar"], body.tema-claro .menu-item.delete .material-icons,
+body.tema-claro #iconos-bulk-reemplazo .material-icons:last-child {
+    color: #ffb347 !important;
+    -webkit-text-fill-color: #ffb347 !important;
+}
+
+/* --------------------------------------------------------------------------
+   6. ESTADOS ACTIVOS Y SELECCIÓN (Botones encendidos)
+   -------------------------------------------------------------------------- */
+/* Selección de Canciones/Carpetas */
+body.tema-claro .song-item.selected, body.tema-claro .folder-item.selected {
+    background-color: color-mix(in srgb, var(--accent-color) 15%, transparent) !important;
+    border-left: 6px solid var(--accent-color) !important;
+}
+
+/* Botones Activos Generales (Fondo de color de énfasis y letra blanca) */
+body.tema-claro .segment-item.active, body.tema-claro .segment-grid .segment-item.active,
+body.tema-claro .segment-control .segment-item.active, body.tema-claro .btn-estilo.activo,
+body.tema-claro .btn-p.activo, body.tema-claro .btn-t.activo, body.tema-claro .cuadrito-capo.activo,
+body.tema-claro .pad-btn.activo-pad, body.tema-claro .btn-color-rectangular.active,
+body.tema-claro .btn-color-rectangular.activo, body.tema-claro .velocity-capsule.active,
+body.tema-claro .tab.active, body.tema-claro .btn-modal-round:active,
+body.tema-claro .dev-btn:active, body.tema-claro .dev-btn.selected {
+    background-color: var(--accent-color) !important; 
+    border-color: var(--accent-color) !important;
+    color: #ffffff !important; 
+    font-weight: bold !important;
+}
+
+body.tema-claro .btn-estilo.activo .material-icons, body.tema-claro .btn-p.activo .material-icons,
+body.tema-claro .segment-item.active .material-icons {
+    color: #ffffff !important;
+}
+
+/* Accesos Rápidos (Brillo Suave) */
+body.tema-claro .q-btn.active {
+    background-color: color-mix(in srgb, var(--accent-color) 15%, transparent) !important;
+    border-color: color-mix(in srgb, var(--accent-color) 40%, transparent) !important;
+}
+
+/* Menú Lateral de Ajustes */
+body.tema-claro .side-item { border-bottom: 1px solid #e0e0e0 !important; background-color: #ffffff !important; border-radius: 12px !important; margin-bottom: 12px !important; box-shadow: 0 1px 2px rgba(0,0,0,0.03) !important; }
+body.tema-claro .side-item:active { background-color: #e0e0e0 !important; color: #1a1a1a !important; }
+
+/* --------------------------------------------------------------------------
+   7. SLIDERS, SWITCHES Y LÍNEAS DIVISORIAS
+   -------------------------------------------------------------------------- */
+body.tema-claro input[type="range"], body.tema-claro .slider-verde { background: #dddddd !important; }
+body.tema-claro .sw-v input:not(:checked) + .sw-slider, body.tema-claro .switch-elegante input:not(:checked) + .slider-round { 
+    background-color: #cccccc !important; border-color: #bbbbbb !important; 
+}
+body.tema-claro .sw-v input:not(:checked) + .sw-slider:before, body.tema-claro .switch-elegante input:not(:checked) + .slider-round:before { 
+    background-color: #ffffff !important; 
+}
+body.tema-claro .sw-v input:checked + .sw-slider, body.tema-claro .switch-elegante input:checked + .slider-round { 
+    background-color: var(--accent-color) !important; border-color: var(--accent-color) !important; 
+}
+body.tema-claro .sw-v input:checked + .sw-slider:before, body.tema-claro .switch-elegante input:checked + .slider-round:before { 
+    background-color: #ffffff !important; 
+}
+
+body.tema-claro .song-item, body.tema-claro .folder-item, body.tema-claro .search-section,
+body.tema-claro .sort-bar, body.tema-claro .divisor-p, body.tema-claro .divisor-modal,
+body.tema-claro #folders-list-dynamic div {
+    border-bottom: 1px solid #e0e0e0 !important; background-color: transparent !important;
+}
+body.tema-claro .divisor-p, body.tema-claro .divisor-modal, body.tema-claro #move-modal div[style*="background: #444"] { 
+    background-color: #e0e0e0 !important; 
+}
+
+/* --------------------------------------------------------------------------
+   8. REPRODUCTOR FLOTANTE Y METRÓNOMO (GLASSMORPHISM CLARO)
+   -------------------------------------------------------------------------- */
+body.tema-claro .floating-player, body.tema-claro .floating-controls.dynamic-island.glass {
+    background: rgba(255, 255, 255, 0.85) !important; 
+    backdrop-filter: blur(15px) !important; 
+    -webkit-backdrop-filter: blur(15px) !important;
+    border: 1px solid rgba(0, 0, 0, 0.05) !important; 
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12) !important;
+}
+
+body.tema-claro .floating-player > div, body.tema-claro .floating-player .circle { background-color: transparent !important; border: none !important; box-shadow: none !important; }
+body.tema-claro .cap-divider { background-color: rgba(0, 0, 0, 0.15) !important; }
+body.tema-claro #metroIcon { filter: invert(0.8) !important; opacity: 0.8 !important; }
+
+/* Hover y Activo del Reproductor */
+body.tema-claro .dynamic-island .cap-btn:hover, body.tema-claro .floating-player .control-btn:hover,
+body.tema-claro .floating-player .cap-btn:hover { background-color: rgba(0, 0, 0, 0.05) !important; }
+body.tema-claro .dynamic-island .cap-btn:active { background-color: rgba(0, 0, 0, 0.1) !important; }
+
+body.tema-claro .floating-player .control-btn.activo-btn, body.tema-claro .floating-player .cap-btn.activo-pad,
+body.tema-claro .floating-player #btn-player-play.activo-btn, body.tema-claro .floating-player #btn-player-pads.activo-pad,
+body.tema-claro #scrollBtn.activo-scroll, body.tema-claro #metroBtn.activo-red {
+    background-color: color-mix(in srgb, var(--accent-color) 15%, transparent) !important; 
+    color: var(--accent-color) !important;
+    border: none !important;
+    box-shadow: none !important;
+}
+
+body.tema-claro #scrollBtn.activo-scroll .material-icons, body.tema-claro #metroBtn.activo-red #metroIcon,
+body.tema-claro .floating-player .activo-btn .material-icons, body.tema-claro .floating-player .activo-pad .material-icons {
+    color: var(--accent-color) !important;
+    filter: none !important;
+}
+
+body.tema-claro .floating-controls.dynamic-island.metro-flash-global {
+    background-color: color-mix(in srgb, var(--accent-color) 15%, #ffffff) !important;
+    box-shadow: 0 8px 30px color-mix(in srgb, var(--accent-color) 15%, rgba(0, 0, 0, 0.05)) !important;
+    border-color: transparent !important;
+    transform: translateX(-50%) scale(1.01);
+    transition: none !important;
+}
+
+body.tema-claro .floating-controls.dynamic-island.metro-flash-global .cap-btn, 
+body.tema-claro .floating-controls.dynamic-island.metro-flash-global .material-icons,
+body.tema-claro .floating-controls.dynamic-island.metro-flash-global .reset-btn,
+body.tema-claro .floating-controls.dynamic-island.metro-flash-global .cap-btn.text-btn {
+    color: var(--accent-color) !important;
+    text-shadow: none !important;
+    transition: none !important;
+}
+
+/* --------------------------------------------------------------------------
+   9. DIAGRAMAS Y DIBUJOS (SVG INVERTIDOS A NEGRO) E INSTRUMENTOS
+   -------------------------------------------------------------------------- */
+body.tema-claro .diag-fijo svg path, body.tema-claro .diag-fijo svg line, body.tema-claro .diag-fijo svg circle, 
+body.tema-claro .acorde-diagrama svg path, body.tema-claro .acorde-diagrama svg line, body.tema-claro .acorde-diagrama svg circle,
+body.tema-claro .diagramas-container svg path, body.tema-claro .diagramas-container svg line, body.tema-claro .diagramas-container svg circle {
+    stroke: #121212 !important;
+}
+body.tema-claro .diag-fijo svg .punto-relleno, body.tema-claro .acorde-diagrama svg .punto-relleno,
+body.tema-claro .diagramas-container svg .punto-relleno {
+    fill: #121212 !important;
+}
+body.tema-claro .diag-fijo .acorde-diagrama span { color: #121212 !important; }
+
+/* Íconos de instrumentos unificados */
+body.tema-claro .q-btn.active .custom-inst-icon .mastil,
+body.tema-claro .q-btn.active .custom-inst-icon .clavijas-izq::before,
+body.tema-claro .q-btn.active .custom-inst-icon .clavijas-der::before {
+    background: var(--accent-color) !important;
+}
+body.tema-claro .q-btn.active .guitarra .clavijas-izq::before, body.tema-claro .q-btn.active .guitarra .clavijas-der::before {
+    box-shadow: 0 6px var(--accent-color), 0 -6px var(--accent-color) !important;
+}
+body.tema-claro .q-btn.active .bajo .clavijas-izq::before, body.tema-claro .q-btn.active .bajo .clavijas-der::before {
+    box-shadow: 0 7px var(--accent-color) !important;
+}
+body.tema-claro .q-btn img { filter: grayscale(1) brightness(0.4) !important; opacity: 1 !important; }
+body.tema-claro .q-btn.active img { filter: none !important; }
+/* 1. Devolver el Énfasis (Color) a los iconos del header */
+body.tema-claro .panel-header .material-icons,
+body.tema-claro .config-header .material-icons,
+body.tema-claro .create-header .material-icons,
+body.tema-claro .top-bar .material-icons {
+    color: var(--accent-color) !important;
+    -webkit-text-fill-color: var(--accent-color) !important;
+}
+
+/* 2. Líneas separadoras de los menús desplegables en gris claro */
+body.tema-claro .options-menu .menu-item, 
+body.tema-claro .bulk-menu-up .menu-item {
+    border-bottom: 1px solid #e0e0e0 !important; 
+}
+
+/* 3. Cajón de "Buscar canción" en gris claro */
+body.tema-claro .search-bar {
+    background-color: #f2f2f7 !important;
+    border: 1px solid #d1d1d6 !important;
+}
+/* 🔥 FIX: SUBMENÚS Y OPCIONES EN TEMA CLARO 🔥 */
+body.tema-claro .options-menu, 
+body.tema-claro .bulk-menu-up,
+body.tema-claro #import-options-menu,
+body.tema-claro #sort-options-menu,
+body.tema-claro #folder-bulk-menu {
+    background-color: #ffffff !important;
+    border: 1px solid #cccccc !important;
+    box-shadow: 0 8px 25px rgba(0,0,0,0.15) !important;
+}
+
+body.tema-claro .options-menu .menu-item, 
+body.tema-claro .bulk-menu-up .menu-item {
+    background-color: transparent !important;
+    color: #121212 !important;
+    -webkit-text-fill-color: #121212 !important;
+    border-bottom: 1px solid #eeeeee !important;
+}
+
+/* Quita la línea separadora al último elemento para que se vea limpio */
+body.tema-claro .options-menu .menu-item:last-child, 
+body.tema-claro .bulk-menu-up .menu-item:last-child {
+    border-bottom: none !important;
+}
+
+/* Efecto gris claro al presionar un elemento del menú */
+body.tema-claro .options-menu .menu-item:active, 
+body.tema-claro .bulk-menu-up .menu-item:active {
+    background-color: #f0f0f0 !important;
+}
+
+/* Asegura que los iconos (ej. el de "Teclado" o "Buscar") se vean oscuros y no se pierdan */
+body.tema-claro .options-menu .menu-item .material-icons, 
+body.tema-claro .bulk-menu-up .menu-item .material-icons {
+    color: #555555 !important;
+    -webkit-text-fill-color: #555555 !important;
+}
+/* 🔥 FIX: CAPAS DE FONDO PARA AJUSTES (GRIS -> BLANCO -> CONTENIDO) 🔥 */
+
+/* 1. Capa Base: Forzamos el gris claro para toda la pantalla de ajustes */
+body.tema-claro .config-content {
+    background-color: #f2f2f7 !important;
+}
+
+/* 2. Capa de Contenido: Tarjeta Blanca Pura (Sin marcos ni sombras) */
+body.tema-claro #config-main-view > div {
+    background-color: #ffffff !important;
+    border-radius: 16px !important;
+    border: none !important; /* 🔥 ADIÓS AL MARCO */
+    box-shadow: none !important; /* 🔥 ADIÓS A LA SOMBRA */
+}
+
+/* 3. Ajustes de seguridad para que el contenido respire bien dentro de la tarjeta blanca */
+body.tema-claro #section-general,
+body.tema-claro #section-personalizacion {
+    padding: 20px !important;
+    padding-bottom: 100px !important; /* Evita que el reproductor flotante tape opciones */
+}
+/* 🛡️ FIX: Restauramos el sticky y redondeamos el monitor en lugar de cortar toda la sección */
+body.tema-claro #section-personalizacion {
+    overflow: visible !important;
+}
+body.tema-claro .contenedor-monitor-fijo {
+    border-top-left-radius: 16px !important;
+    border-top-right-radius: 16px !important;
+}
+/* 🔥 FIX: ELIMINAR LA FRANJA NEGRA Y EL LAG DEL PANEL LATERAL 🔥 */
+body.tema-claro .panel-content {
+    box-shadow: none !important; /* Mata la sombra pesada y elimina el lag */
+    border-right: 1px solid #d1d1d6 !important; /* Línea sutil y limpia para separar */
+}
+/* Modo Encendido (Reposo) */
+body.mostrar-linea-sync #autoplay-sync-line {
+    display: block;
+    opacity: 0.25; /* Sutil para no cansar la vista */
+}
+
+/* El destello del metrónomo (Flash) */
+body.mostrar-linea-sync #autoplay-sync-line.linea-flash {
+    opacity: 0.9;
+    height: 2px;
+    box-shadow: 0 0 12px var(--accent-color);
+    transition: none !important; /* Golpe seco e instantáneo */
+}
+/* ==========================================================================
+   FIN DEL TEMA CLARO
+   ========================================================================== */
+/*----------------------------------- FIN de TEMA CLARO -----------------------------------*/
+
+/* ==========================================================================
+   FIN DEL ARCHIVO STYLE.CSS - PraiseBook Pro 2026
+   ========================================================================== */
